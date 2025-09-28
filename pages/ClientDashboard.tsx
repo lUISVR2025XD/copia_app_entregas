@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { Profile, Order, OrderStatus, CartItem, Business, Location, Product, UserRole, Notification } from '../types';
 import OrderTrackingMap from '../components/maps/OrderTrackingMap';
@@ -16,7 +14,7 @@ import { notificationService } from '../services/notificationService';
 import { orderService } from '../services/orderService';
 import BusinessDetailPage from './BusinessDetailPage';
 import BusinessFilters from '../components/client/BusinessFilters';
-import OrderHistoryPage from './OrderHistoryPage';
+import MyOrdersPage from './MyOrdersPage';
 import { useBusinessFilter } from '../hooks/useBusinessFilter';
 
 // Mock API call from HomePage
@@ -64,6 +62,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
     const [cartBusiness, setCartBusiness] = useState<Business | null>(null);
     const [isCartVisible, setIsCartVisible] = useState(false);
     const [driverMessages, setDriverMessages] = useState<Notification[]>([]);
+    const [prepTimeRemaining, setPrepTimeRemaining] = useState<string | null>(null);
     
     // State for shopping view
     const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -106,19 +105,23 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
         loadData();
     }, [user.id, user.location]);
 
-    // Simulate delivery person moving
+    // Simulate delivery person moving for a real-time tracking experience.
+    // This effect runs when there's an active order being tracked.
     useEffect(() => {
         let intervalId: number | undefined;
 
         if (currentView === 'tracking' && activeOrder && activeOrder.status === OrderStatus.ON_THE_WAY) {
+            // We use setInterval to periodically update the delivery person's location.
             intervalId = window.setInterval(() => {
                 setDeliveryLocation(prev => {
                     if(!prev || !activeOrder) return prev;
-                    // Move the delivery person 20% closer to the client with each tick for a more dynamic feel.
-                    const newLat = prev.lat + (activeOrder.delivery_location.lat - prev.lat) * 0.2;
-                    const newLng = prev.lng + (activeOrder.delivery_location.lng - prev.lng) * 0.2;
                     
-                    // Check if the delivery person has arrived.
+                    // Simulate movement by interpolating the position.
+                    // This moves the location 10% closer to the destination every second.
+                    const newLat = prev.lat + (activeOrder.delivery_location.lat - prev.lat) * 0.1;
+                    const newLng = prev.lng + (activeOrder.delivery_location.lng - prev.lng) * 0.1;
+                    
+                    // Check if the delivery person is close enough to be considered "arrived".
                     const dist = Math.sqrt(Math.pow(activeOrder.delivery_location.lat - newLat, 2) + Math.pow(activeOrder.delivery_location.lng - newLng, 2));
                     
                     if(dist < 0.0001) { // Threshold for arrival
@@ -139,9 +142,11 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
                     }
                     return { lat: newLat, lng: newLng };
                 });
-            }, 2000); // Update every 2 seconds for a smoother "real-time" experience.
+            }, 1000); // Update every second for a smoother, more frequent update.
         }
         
+        // Cleanup function to clear the interval when the component unmounts
+        // or the dependencies (activeOrder, currentView) change.
         return () => {
             if (intervalId) {
                 clearInterval(intervalId);
@@ -154,52 +159,79 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
             if (!notification.orderId || notification.role !== user.role) {
                 return;
             }
-
-            // Handle incoming messages from the driver for the active order
+    
+            // Handle incoming messages from the driver
             if (activeOrder && notification.orderId === activeOrder.id && notification.title === 'Mensaje del Repartidor') {
                 setDriverMessages(prev => [...prev, notification]);
-                return; // Message handled, no further processing needed
+                return;
             }
-
-            let newStatus: OrderStatus | null = null;
-            if (notification.title === 'Pedido Confirmado') {
-                newStatus = OrderStatus.IN_PREPARATION;
-            } else if (notification.title === '¡Tu pedido está listo!') {
-                newStatus = OrderStatus.READY_FOR_PICKUP;
-            } else if (notification.title === '¡Tu pedido está en camino!') {
-                newStatus = OrderStatus.ON_THE_WAY;
-            } else if (notification.title === 'Pedido Rechazado') {
-                newStatus = OrderStatus.REJECTED;
-            } else if (notification.title === '¡Pedido Entregado!') {
-                newStatus = OrderStatus.DELIVERED;
-            }
-
-            if (newStatus) {
-                setPastOrders(currentOrders => {
-                    const orderIndex = currentOrders.findIndex(o => o.id === notification.orderId);
-                    if (orderIndex === -1) return currentOrders;
-                    
-                    const updatedOrder = { ...currentOrders[orderIndex], status: newStatus as OrderStatus };
-                    const newOrders = [...currentOrders];
-                    newOrders[orderIndex] = updatedOrder;
-
-                    if (newStatus === OrderStatus.ON_THE_WAY) {
-                        setActiveOrder(updatedOrder);
-                        setDeliveryLocation(updatedOrder.business?.location); 
-                        setCurrentView('tracking');
-                        setDriverMessages([]);
-                    } else if (activeOrder && activeOrder.id === updatedOrder.id) {
-                        setActiveOrder(updatedOrder);
+    
+            // Handle all other order status updates
+            if (notification.order) {
+                const updatedOrder = notification.order;
+    
+                // Update the main list of orders
+                setPastOrders(prevOrders => {
+                    const existingOrderIndex = prevOrders.findIndex(o => o.id === updatedOrder.id);
+                    const newOrders = [...prevOrders];
+                    if (existingOrderIndex > -1) {
+                        newOrders[existingOrderIndex] = updatedOrder;
+                    } else {
+                         // This shouldn't happen for an update, but as a fallback
+                        newOrders.unshift(updatedOrder);
                     }
-                    
                     return newOrders;
                 });
+    
+                // Update the active order if it's the one being changed, or if a new order becomes trackable
+                if ((activeOrder && activeOrder.id === updatedOrder.id) || (!activeOrder && isTrackable(updatedOrder.status))) {
+                    setActiveOrder(updatedOrder);
+                }
+    
+                // If an order becomes "ON_THE_WAY", ensure view is tracking
+                if (updatedOrder.status === OrderStatus.ON_THE_WAY) {
+                    setActiveOrder(updatedOrder);
+                    setDeliveryLocation(updatedOrder.delivery_person?.location || updatedOrder.business?.location);
+                    setCurrentView('tracking');
+                    setDriverMessages([]);
+                }
             }
         };
-
+    
         const unsubscribe = notificationService.subscribe(handleNotification);
         return () => unsubscribe();
     }, [user.role, activeOrder]);
+
+    // Effect for the preparation countdown timer
+    useEffect(() => {
+        let intervalId: number | undefined;
+    
+        if (activeOrder && activeOrder.status === OrderStatus.IN_PREPARATION && activeOrder.preparation_time) {
+            // When we receive the notification, we start a timer for the client.
+            // We assume the timer starts *now*. A more robust system would use an `accepted_at` timestamp.
+            const prepTimeInSeconds = activeOrder.preparation_time * 60;
+            const endTime = Date.now() + prepTimeInSeconds * 1000;
+    
+            const updateTimer = () => {
+                const remainingSeconds = Math.round((endTime - Date.now()) / 1000);
+                if (remainingSeconds <= 0) {
+                    setPrepTimeRemaining("¡Casi listo!");
+                    clearInterval(intervalId);
+                } else {
+                    const minutes = Math.floor(remainingSeconds / 60);
+                    const seconds = remainingSeconds % 60;
+                    setPrepTimeRemaining(`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+                }
+            };
+            
+            updateTimer(); // Initial call to set time immediately
+            intervalId = window.setInterval(updateTimer, 1000);
+        } else {
+            setPrepTimeRemaining(null); // Clear timer if order status changes
+        }
+    
+        return () => clearInterval(intervalId);
+    }, [activeOrder]);
 
 
     const handleRateOrder = () => {
@@ -370,21 +402,21 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
         const currentStepIndex = getStepIndex(activeOrder.status);
 
         return (
-             <Card className="p-6 bg-white/10 border border-white/20">
+             <Card className="p-6 bg-white text-gray-900 shadow-lg">
                 <div className="flex justify-between items-start mb-6">
                     <div>
-                        <h3 className="text-2xl font-bold">Tu pedido de <span className="text-purple-400">{activeOrder.business?.name}</span></h3>
-                        <p className="text-gray-400">ID del Pedido: {activeOrder.id.slice(-6)}</p>
+                        <h3 className="text-2xl font-bold">Tu pedido de <span className="text-purple-600">{activeOrder.business?.name}</span></h3>
+                        <p className="text-gray-600">ID del Pedido: {activeOrder.id.slice(-6)}</p>
                     </div>
                     <div className={`px-4 py-2 rounded-full text-white font-semibold ${statusInfo.color}`}>{statusInfo.text}</div>
                 </div>
                 
                 {activeOrder.status === OrderStatus.REJECTED ? (
-                     <div className="mt-8 bg-red-500/10 border border-red-500/30 rounded-lg p-6 text-center">
-                         <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-                         <h4 className="text-2xl font-bold text-red-200">Pedido Rechazado</h4>
-                         <p className="text-gray-300 mt-2 mb-6">Lo sentimos, el negocio no pudo aceptar tu pedido en este momento. No se ha realizado ningún cargo.</p>
-                         <Button onClick={() => { setActiveOrder(null); setCurrentView('shopping'); }} className="mt-6 w-full md:w-auto bg-purple-600 hover:bg-purple-700">Volver a Restaurantes</Button>
+                     <div className="mt-8 bg-white border border-gray-200 rounded-lg p-6 text-center shadow-md">
+                         <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                         <h4 className="text-2xl font-bold text-gray-900">Pedido Rechazado</h4>
+                         <p className="text-gray-600 mt-2 mb-6">Lo sentimos, el negocio no pudo aceptar tu pedido en este momento. No se ha realizado ningún cargo.</p>
+                         <Button onClick={() => { setActiveOrder(null); setCurrentView('shopping'); }} className="mt-6 w-full md:w-auto !bg-purple-600 !text-white hover:!bg-purple-700">Volver a Restaurantes</Button>
                      </div>
                 ) : (
                     <>
@@ -393,67 +425,74 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
                         {steps.map((step, index) => (
                             <React.Fragment key={step.status}>
                                 <div className="flex flex-col items-center text-center">
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${index <= currentStepIndex ? 'bg-purple-500 text-white border-purple-500' : 'bg-white/10 border-white/20 text-gray-400'}`}>
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${index <= currentStepIndex ? 'bg-purple-500 text-white border-purple-500' : 'bg-gray-100 border-gray-300 text-gray-400'}`}>
                                         <step.icon size={24} />
                                     </div>
-                                    <p className={`mt-2 w-20 text-xs sm:text-sm font-medium transition-colors duration-300 ${index <= currentStepIndex ? 'text-gray-100' : 'text-gray-500'}`}>{step.label}</p>
+                                    <p className={`mt-2 w-20 text-xs sm:text-sm font-medium transition-colors duration-300 ${index <= currentStepIndex ? 'text-gray-800' : 'text-gray-500'}`}>{step.label}</p>
                                 </div>
                                 {index < steps.length - 1 && (
-                                    <div className={`flex-1 h-1 mx-1 sm:mx-2 transition-colors duration-500 ${index < currentStepIndex ? 'bg-purple-500' : 'bg-white/10'}`}></div>
+                                    <div className={`flex-1 h-1 mx-1 sm:mx-2 transition-colors duration-500 ${index < currentStepIndex ? 'bg-purple-500' : 'bg-gray-200'}`}></div>
                                 )}
                             </React.Fragment>
                         ))}
                     </div>
 
+                    {activeOrder.status === OrderStatus.IN_PREPARATION && (
+                        <div className="text-center my-4 p-3 bg-gray-100 rounded-lg">
+                            <p className="font-semibold text-gray-800">Tu pedido estará listo en aproximadamente:</p>
+                            <p className="text-2xl font-bold text-purple-600">{prepTimeRemaining || `${activeOrder.preparation_time}:00`}</p>
+                        </div>
+                    )}
+
                     {driverMessages.length > 0 && (
                         <div className="my-4">
                             <h4 className="font-semibold text-lg mb-2 flex items-center">
-                                <MessageSquare className="w-5 h-5 mr-2 text-purple-400" />
+                                <MessageSquare className="w-5 h-5 mr-2 text-purple-600" />
                                 Mensajes del Repartidor
                             </h4>
-                            <div className="space-y-2 bg-black/20 p-3 rounded-lg max-h-24 overflow-y-auto">
+                            <div className="space-y-2 bg-gray-100 p-3 rounded-lg max-h-24 overflow-y-auto">
                                 {driverMessages.map(notif => (
-                                    <p key={notif.id} className="text-sm text-gray-300">
-                                        <span className="font-semibold text-purple-300">Repartidor:</span> {notif.message.split(': "')[1]?.slice(0, -1) || notif.message}
+                                    <p key={notif.id} className="text-sm text-gray-800">
+                                        <span className="font-semibold text-purple-700">Repartidor:</span> {notif.message.split(': "')[1]?.slice(0, -1) || notif.message}
                                     </p>
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    <div className="border-t border-white/20 mt-6 pt-4">
+                    <div className="border-t border-gray-200 mt-6 pt-4">
                         <h4 className="font-semibold text-lg mb-2">Detalles del Pedido</h4>
                         <ul className="space-y-1 text-sm mb-4">
                             {activeOrder.items.map(item => (
                                 <li key={item.product.id} className="flex justify-between">
-                                    <span className="text-gray-300">{item.quantity}x {item.product.name}</span>
-                                    <span className="text-gray-200">${(item.product.price * item.quantity).toFixed(2)}</span>
+                                    <span className="text-gray-700">{item.quantity}x {item.product.name}</span>
+                                    <span className="text-gray-900 font-medium">${(item.product.price * item.quantity).toFixed(2)}</span>
                                 </li>
                             ))}
                         </ul>
-                        <div className="space-y-1 text-sm border-t border-white/20 pt-2">
-                            <div className="flex justify-between text-gray-300"><span>Subtotal:</span> <span>${(activeOrder.total_price - (activeOrder.business?.delivery_fee || 0)).toFixed(2)}</span></div>
-                            <div className="flex justify-between text-gray-300"><span>Envío:</span> <span>${(activeOrder.business?.delivery_fee || 0).toFixed(2)}</span></div>
+                        <div className="space-y-1 text-sm border-t border-gray-200 pt-2">
+                            <div className="flex justify-between text-gray-600"><span>Subtotal:</span> <span>${(activeOrder.total_price - (activeOrder.business?.delivery_fee || 0)).toFixed(2)}</span></div>
+                            <div className="flex justify-between text-gray-600"><span>Envío:</span> <span>${(activeOrder.business?.delivery_fee || 0).toFixed(2)}</span></div>
                             <div className="flex justify-between font-bold text-base mt-1"><span>Total:</span> <span>${activeOrder.total_price.toFixed(2)}</span></div>
                         </div>
                         {activeOrder.special_notes && (
-                            <div className="mt-4 bg-black/20 p-3 rounded-lg">
-                                <p className="font-semibold text-sm">Notas Especiales:</p>
-                                <p className="text-gray-300 text-sm italic">"{activeOrder.special_notes}"</p>
+                            <div className="mt-4 bg-gray-100 p-3 rounded-lg">
+                                <p className="font-semibold text-sm text-gray-900">Notas Especiales:</p>
+                                <p className="text-gray-700 text-sm italic">"{activeOrder.special_notes}"</p>
                             </div>
                         )}
                     </div>
                     
                     {activeOrder.status === OrderStatus.DELIVERED && (
-                        <div className="mt-8 bg-green-500/10 border border-green-500/30 rounded-lg p-6 text-center">
-                            <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
-                            <h4 className="text-2xl font-bold text-green-200">¡Tu pedido ha sido entregado!</h4>
-                            <p className="text-gray-300 mt-2 mb-6">Por favor, califica tu experiencia.</p>
+                        <div className="mt-8 bg-white border border-gray-200 rounded-lg p-6 text-center shadow-md">
+                            <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                            <h4 className="text-2xl font-bold text-gray-900">¡Tu pedido ha sido entregado!</h4>
+                            <p className="text-gray-600 mt-2 mb-6">Por favor, califica tu experiencia.</p>
                             <div className="flex flex-col items-center space-y-4">
-                                <div><p className="font-semibold mb-1">Calificar a {activeOrder.business?.name}</p><StarRating rating={0} setRating={() => {}} size={28}/></div>
-                                <div><p className="font-semibold mb-1">Calificar a {activeOrder.delivery_person?.name}</p><StarRating rating={0} setRating={() => {}} size={28}/></div>
+                                <div><p className="font-semibold mb-1 text-gray-800">Calificar a {activeOrder.business?.name}</p><StarRating rating={0} setRating={() => {}} size={28}/></div>
+                                <div><p className="font-semibold mb-1 text-gray-800">Calificar a {activeOrder.delivery_person?.name}</p><StarRating rating={0} setRating={() => {}} size={28}/></div>
                             </div>
-                            <Button onClick={handleRateOrder} className="mt-6 w-full md:w-auto bg-purple-600 hover:bg-purple-700">Enviar Calificación</Button>
+                            <Button onClick={handleRateOrder} className="mt-6 w-full md:w-auto !bg-purple-600 !text-white hover:!bg-purple-700">Enviar Calificación</Button>
                         </div>
                     )}
                     </>
@@ -489,7 +528,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
             case 'businessDetail':
                 return selectedBusiness && <BusinessDetailPage business={selectedBusiness} onAddToCart={handleAddToCart} onGoBack={handleGoBackToList} />;
             case 'history':
-                return <OrderHistoryPage orders={pastOrders} onTrackOrder={handleTrackOrderFromHistory} onBackToShopping={() => setCurrentView('shopping')} />;
+                return <MyOrdersPage orders={pastOrders} onTrackOrder={handleTrackOrderFromHistory} onBackToShopping={() => setCurrentView('shopping')} />;
             case 'shopping':
             default:
                  return (

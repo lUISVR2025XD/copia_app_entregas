@@ -60,22 +60,32 @@ const OrderTrackingMap: React.FC<OrderTrackingMapProps> = ({
     const [map, setMap] = useState<L.Map | null>(null);
     const [sentMessage, setSentMessage] = useState<string | null>(null);
 
+    // This effect is responsible for automatically adjusting the map view.
+    // It runs whenever the map instance is ready or any of the key locations change.
     useEffect(() => {
+        // Ensure the map instance is available before proceeding.
         if(map) {
+            // Create a LatLngBounds object to encompass all important points.
             const bounds = L.latLngBounds([]);
+            
+            // Add each location to the bounds if it exists.
             if(clientLocation) bounds.extend([clientLocation.lat, clientLocation.lng]);
             if(businessLocation) bounds.extend([businessLocation.lat, businessLocation.lng]);
             if(deliveryLocation) bounds.extend([deliveryLocation.lat, deliveryLocation.lng]);
 
+            // Only adjust the map view if the bounds are valid (i.e., contain at least one point).
             if(bounds.isValid()) {
-                // Animate the view adjustment for a smooth tracking experience.
-                map.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 1.0 });
+                // Use fitBounds to smoothly pan and zoom the map to show all markers.
+                // The padding ensures markers aren't right at the edge of the map.
+                // The animation makes the transition feel seamless as the delivery location updates.
+                map.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 1.5 });
             } else {
+                // If no locations are available, center the map on the default center point.
                 map.setView([center.lat, center.lng], zoom);
             }
         }
-    // Re-calculates bounds whenever the delivery person's location updates
-    // to keep all key points (client, business, delivery) in view.
+    // The dependency array ensures this effect re-runs whenever a location prop changes,
+    // keeping the map view perfectly synchronized with the real-time data.
     }, [map, clientLocation, businessLocation, deliveryLocation, center, zoom]);
     
     const handleSendMessage = (message: string) => {

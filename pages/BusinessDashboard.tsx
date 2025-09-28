@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { Profile, Order, OrderStatus, UserRole, Notification } from '../types';
 import Button from '../components/ui/Button';
@@ -76,7 +74,17 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ user, onLogout })
 
     const handleConfirmAccept = async () => {
         if (orderToAccept) {
-            await handleUpdateStatus(orderToAccept.id, OrderStatus.IN_PREPARATION, prepTime);
+            const orderId = orderToAccept.id;
+            const currentPrepTime = prepTime;
+    
+            await handleUpdateStatus(orderId, OrderStatus.IN_PREPARATION, currentPrepTime);
+    
+            // Set a timer to automatically mark the order as ready for pickup
+            const prepTimeInMillis = currentPrepTime * 60 * 1000;
+            setTimeout(() => {
+                // This call will handle the state update and send notifications
+                handleUpdateStatus(orderId, OrderStatus.READY_FOR_PICKUP);
+            }, prepTimeInMillis);
         }
         setIsPrepTimeModalOpen(false);
         setOrderToAccept(null);
@@ -98,6 +106,7 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ user, onLogout })
                     notificationService.sendNotification({
                         id: `note-accepted-${Date.now()}`,
                         role: UserRole.CLIENT, orderId: id,
+                        order: updatedOrder,
                         title: 'Pedido Confirmado',
                         message: `¡${user.name} ha aceptado tu pedido y lo está preparando! Tiempo estimado: ${prepTimeValue} min.`,
                         type: 'success', icon: Check,
@@ -108,6 +117,7 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ user, onLogout })
                     notificationService.sendNotification({
                         id: `note-rejected-${Date.now()}`,
                         role: UserRole.CLIENT, orderId: id,
+                        order: updatedOrder,
                         title: 'Pedido Rechazado',
                         message: `Lo sentimos, ${user.name} no pudo aceptar tu pedido en este momento.`,
                         type: 'error', icon: X,
@@ -126,6 +136,7 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ user, onLogout })
                     notificationService.sendNotification({
                         id: `note-ready-client-${Date.now()}`,
                         role: UserRole.CLIENT, orderId: id,
+                        order: updatedOrder,
                         title: '¡Tu pedido está listo!',
                         message: `Tu pedido de ${user.name} está listo y esperando a un repartidor.`,
                         type: 'info', icon: Package,
@@ -158,7 +169,7 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ user, onLogout })
                                 />
                             ))
                         ) : (
-                            <p className="text-gray-400 p-4 bg-black/20 rounded-lg text-center">No hay pedidos nuevos.</p>
+                            <p className="text-gray-700 p-4 bg-white rounded-lg text-center shadow">No hay pedidos nuevos.</p>
                         )}
                     </div>
                 )}
@@ -178,7 +189,7 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ user, onLogout })
                                 />
                             ))
                         ) : (
-                            <p className="text-gray-400 p-4 bg-black/20 rounded-lg text-center">No hay pedidos en preparación.</p>
+                            <p className="text-gray-700 p-4 bg-white rounded-lg text-center shadow">No hay pedidos en preparación.</p>
                         )}
                     </div>
                  )}
@@ -212,7 +223,7 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ user, onLogout })
             </main>
             <Modal isOpen={isPrepTimeModalOpen} onClose={() => setIsPrepTimeModalOpen(false)} title="Confirmar Pedido">
                 <div>
-                    <label htmlFor="prepTime" className="block text-sm font-medium text-gray-300 mb-2">
+                    <label htmlFor="prepTime" className="block text-sm font-medium text-gray-700 mb-2">
                         Tiempo de preparación estimado (minutos):
                     </label>
                     <input 
@@ -220,12 +231,12 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ user, onLogout })
                         id="prepTime"
                         value={prepTime}
                         onChange={(e) => setPrepTime(Number(e.target.value))}
-                        className="w-full p-2 border rounded-md bg-transparent border-white/20 focus:ring-teal-500 focus:border-teal-500"
+                        className="w-full p-2 border rounded-md bg-gray-100 border-gray-300 text-gray-900 focus:ring-teal-500 focus:border-teal-500"
                         min="5"
                         step="5"
                     />
                     <div className="flex justify-end gap-4 mt-6">
-                        <Button variant="secondary" onClick={() => setIsPrepTimeModalOpen(false)}>Cancelar</Button>
+                        <Button variant="secondary" onClick={() => setIsPrepTimeModalOpen(false)} className="!bg-gray-200 !text-gray-800 hover:!bg-gray-300 !border-gray-300">Cancelar</Button>
                         <Button onClick={handleConfirmAccept} className="bg-teal-600 hover:bg-teal-700">Confirmar Pedido</Button>
                     </div>
                 </div>

@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useState, useEffect } from 'react';
 import { Profile, Order, OrderStatus, DeliveryPerson, UserRole, Notification } from '../types';
 import { ORDER_STATUS_MAP, QUICK_MESSAGES_DELIVERY } from '../constants';
@@ -104,6 +100,7 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
                 id: `note-onway-${Date.now()}`,
                 role: UserRole.CLIENT,
                 orderId: order.id,
+                order: updatedOrder,
                 title: '¡Tu pedido está en camino!',
                 message: `${user.name} ha recogido tu pedido de ${order.business?.name}.`,
                 type: 'info',
@@ -114,6 +111,7 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
                 id: `note-pickedup-biz-${Date.now()}`,
                 role: UserRole.BUSINESS,
                 orderId: order.id,
+                order: updatedOrder,
                 title: 'Pedido Recogido',
                 message: `El repartidor ${user.name} ha recogido el pedido #${order.id.slice(-6)}.`,
                 type: 'info',
@@ -131,6 +129,7 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
                     id: `note-delivered-${Date.now()}`,
                     role: UserRole.CLIENT,
                     orderId: currentOrder.id,
+                    order: updatedOrder,
                     title: '¡Pedido Entregado!',
                     message: `Tu pedido de ${currentOrder.business?.name} ha sido entregado por ${user.name}. ¡Buen provecho!`,
                     type: 'success',
@@ -141,6 +140,7 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
                     id: `note-delivered-biz-${Date.now()}`,
                     role: UserRole.BUSINESS,
                     orderId: currentOrder.id,
+                    order: updatedOrder,
                     title: '¡Pedido Entregado!',
                     message: `El pedido #${currentOrder.id.slice(-6)} ha sido entregado.`,
                     type: 'success',
@@ -234,7 +234,7 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
         <>
             <h2 className="text-3xl font-bold mb-4">Pedidos Disponibles</h2>
             {!isOnline ? (
-                <p className="bg-black/20 p-4 rounded-lg text-center">Ponte en línea para ver pedidos.</p>
+                <p className="bg-white text-gray-700 p-4 rounded-lg text-center shadow">Ponte en línea para ver pedidos.</p>
             ) : availableOrders.length > 0 ? (
                 availableOrders.map(order => (
                     <Card key={order.id} className="p-4 mb-4 bg-gradient-to-br from-[#5A0000] to-[#400000]">
@@ -245,7 +245,7 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
                     </Card>
                 ))
             ) : (
-                 <p className="bg-black/20 p-4 rounded-lg text-center">No hay pedidos disponibles cerca de ti.</p>
+                 <p className="bg-white text-gray-700 p-4 rounded-lg text-center shadow">No hay pedidos disponibles cerca de ti.</p>
             )}
         </>
     )
@@ -259,9 +259,9 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
                 </button>
             </header>
             <main className="p-4 md:p-8">
-                 <div className="bg-black/20 p-4 rounded-lg flex justify-between items-center mb-6">
+                 <div className="bg-white text-gray-900 p-4 rounded-lg flex justify-between items-center mb-6 shadow">
                     <div className="flex items-center">
-                         <Power className={`mr-3 ${isOnline ? 'text-green-400 animate-pulse' : 'text-gray-500'}`} />
+                         <Power className={`mr-3 ${isOnline ? 'text-green-500 animate-pulse' : 'text-gray-500'}`} />
                          <span className="font-semibold text-lg">Estado: {isOnline ? 'En línea' : 'Desconectado'}</span>
                     </div>
                     <Button onClick={toggleOnlineStatus} variant={isOnline ? 'danger' : 'secondary'} className={!isOnline ? `bg-green-600 hover:bg-green-700` : ''}>

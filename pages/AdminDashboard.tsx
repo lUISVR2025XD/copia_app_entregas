@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -47,8 +45,8 @@ type AdminView = 'overview' | 'users' | 'businesses' | 'delivery';
 const PlaceholderContent: React.FC<{ title: string }> = ({ title }) => (
     <div className="p-8">
         <h2 className="text-3xl font-bold mb-4">{title}</h2>
-        <Card className="p-8 text-center bg-black/20 border border-white/10">
-            <p className="text-gray-400">Funcionalidad para {title.toLowerCase()} en construcción.</p>
+        <Card className="p-8 text-center bg-white border border-gray-200 shadow">
+            <p className="text-gray-700">Funcionalidad para {title.toLowerCase()} en construcción.</p>
             <p className="text-gray-500 text-sm mt-2">Esta sección estará disponible próximamente.</p>
         </Card>
     </div>
@@ -141,10 +139,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
         const roleInfo = USER_ROLE_MAP[user.role] || { text: 'Desconocido', color: 'secondary' };
     
         return (
-            <tr className="border-b border-white/10 last:border-b-0 hover:bg-white/5 transition-colors">
+            <tr className="border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors">
                 <td className="p-4 align-top">
-                    <div className="font-semibold">{user.name}</div>
-                    <div className="text-sm text-gray-400">{user.email}</div>
+                    <div className="font-semibold text-gray-900">{user.name}</div>
+                    <div className="text-sm text-gray-600">{user.email}</div>
                 </td>
                 <td className="p-4 align-top">
                     <Badge color={roleInfo.color}>{roleInfo.text}</Badge>
@@ -155,21 +153,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     </Badge>
                 </td>
                 <td className="p-4 align-top text-right">
-                    <DropdownMenu trigger={<Button variant="secondary" className="!p-2"><MoreVertical size={18} /></Button>}>
+                    <DropdownMenu trigger={<Button variant="secondary" className="!p-2 !bg-gray-200 !text-gray-800 hover:!bg-gray-300"><MoreVertical size={18} /></Button>}>
                         <div className="px-4 py-2 text-xs text-gray-400">Cambiar Rol a:</div>
                         {USER_ROLES.filter(r => r.id !== user.role).map(role => (
                             <DropdownMenuItem key={role.id} onClick={() => handleUpdateUser(user.id, { role: role.id })}>
                                 <div className="flex items-center"><Edit className="w-4 h-4 mr-2" /> {role.name}</div>
                             </DropdownMenuItem>
                         ))}
-                        <div className="border-t my-1 border-gray-700"></div>
+                        <div className="border-t my-1 border-gray-200"></div>
                         {user.isActive ? (
                             <DropdownMenuItem onClick={() => openConfirmationModal(user, 'deactivate')}>
-                                <div className="flex items-center text-red-400"><UserX className="w-4 h-4 mr-2" /> Desactivar Usuario</div>
+                                <div className="flex items-center text-red-500"><UserX className="w-4 h-4 mr-2" /> Desactivar Usuario</div>
                             </DropdownMenuItem>
                         ) : (
                             <DropdownMenuItem onClick={() => openConfirmationModal(user, 'activate')}>
-                                <div className="flex items-center text-green-400"><UserCheck className="w-4 h-4 mr-2" /> Activar Usuario</div>
+                                <div className="flex items-center text-green-500"><UserCheck className="w-4 h-4 mr-2" /> Activar Usuario</div>
                             </DropdownMenuItem>
                         )}
                     </DropdownMenu>
@@ -179,169 +177,134 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     };
 
     const renderUserManagement = () => (
-        <div className="p-4 md:p-8">
+         <div className="p-4 md:p-8">
             <h2 className="text-3xl font-bold mb-6">Gestión de Usuarios</h2>
-            <Card className="p-4 mb-6 bg-black/20 border border-white/10">
-                <div className="flex flex-col md:flex-row gap-4 items-center">
-                    <div className="relative flex-grow w-full md:w-auto">
+            <Card className="p-4 bg-white border border-gray-200 shadow mb-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="relative flex-grow">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Buscar por nombre o email..."
+                            placeholder="Buscar por nombre o correo..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full p-2 pl-10 border rounded-lg bg-transparent border-white/20 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            className="w-full p-2 pl-10 border rounded-md bg-gray-50 border-gray-300 text-gray-900 focus:ring-purple-500 focus:border-purple-500"
                         />
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap justify-center">
-                        <span className="text-sm font-semibold hidden sm:inline">Rol:</span>
-                        <Button variant={roleFilter === 'ALL' ? 'primary' : 'secondary'} onClick={() => setRoleFilter('ALL')} className="!px-3 !py-1 text-sm">Todos</Button>
+                    <select
+                        value={roleFilter}
+                        onChange={(e) => setRoleFilter(e.target.value as UserRole | 'ALL')}
+                        className="p-2 border rounded-md bg-gray-50 border-gray-300 text-gray-900 focus:ring-purple-500 focus:border-purple-500"
+                    >
+                        <option value="ALL">Todos los Roles</option>
                         {USER_ROLES.map(role => (
-                            <Button key={role.id} variant={roleFilter === role.id ? 'primary' : 'secondary'} onClick={() => setRoleFilter(role.id)} className="!px-3 !py-1 text-sm">{role.name}</Button>
+                            <option key={role.id} value={role.id}>{role.name}</option>
                         ))}
-                    </div>
+                    </select>
                 </div>
             </Card>
 
-            <Card className="overflow-x-auto bg-black/20 border border-white/10">
-                <table className="w-full min-w-[600px] text-left">
-                    <thead className="border-b border-white/10">
-                        <tr>
-                            <th className="p-4 font-semibold">Nombre</th>
-                            <th className="p-4 font-semibold">Rol</th>
-                            <th className="p-4 font-semibold">Estado</th>
-                            <th className="p-4 font-semibold text-right">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {usersLoading ? (
-                            <tr><td colSpan={4} className="text-center p-8 text-gray-400">Cargando usuarios...</td></tr>
-                        ) : usersError ? (
-                            <tr><td colSpan={4} className="text-center p-8 text-red-400">{usersError}</td></tr>
-                        ) : filteredUsers.length > 0 ? (
-                            filteredUsers.map(user => <UserTableRow key={user.id} user={user} />)
-                        ) : (
-                            <tr><td colSpan={4} className="text-center p-8 text-gray-400">No se encontraron usuarios.</td></tr>
-                        )}
-                    </tbody>
-                </table>
+            <Card className="overflow-x-auto bg-white border border-gray-200 shadow">
+                {usersLoading ? (
+                    <p className="p-8 text-center text-gray-600">Cargando usuarios...</p>
+                ) : usersError ? (
+                    <p className="p-8 text-center text-red-600">Error: {usersError}</p>
+                ) : (
+                    <table className="w-full text-sm text-left text-gray-500">
+                        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col" className="p-4">Usuario</th>
+                                <th scope="col" className="p-4">Rol</th>
+                                <th scope="col" className="p-4">Estado</th>
+                                <th scope="col" className="p-4 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredUsers.map(user => <UserTableRow key={user.id} user={user} />)}
+                        </tbody>
+                    </table>
+                )}
             </Card>
-            <ConfirmationModal
-                isOpen={modalState.isOpen}
-                onClose={() => setModalState({ isOpen: false, user: null, action: null })}
-                onConfirm={handleConfirmAction}
-                title={`${modalState.action === 'activate' ? 'Activar' : 'Desactivar'} Usuario`}
-                message={`¿Estás seguro de que quieres ${modalState.action === 'activate' ? 'activar' : 'desactivar'} la cuenta de ${modalState.user?.name}?`}
-                confirmText={modalState.action === 'activate' ? 'Sí, activar' : 'Sí, desactivar'}
-            />
         </div>
     );
 
     const renderContent = () => {
         switch (currentView) {
+            case 'overview':
+                 return (
+                    <div className="p-4 md:p-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <StatsCard title="Total Usuarios" value={users.length.toString()} icon={<Users size={28} className="text-white"/>} iconBgColor="#3F7FBF" className="bg-gradient-to-br from-[#1A0129] to-[#2C0054]" />
+                            <StatsCard title="Total Negocios" value="12" icon={<Briefcase size={28} className="text-white"/>} iconBgColor="#F2994A" className="bg-gradient-to-br from-[#1A0129] to-[#2C0054]" />
+                            <StatsCard title="Total Repartidores" value="8" icon={<Bike size={28} className="text-white"/>} iconBgColor="#00A88B" className="bg-gradient-to-br from-[#1A0129] to-[#2C0054]" />
+                            <StatsCard title="Pedidos en Curso" value={liveOrders.length.toString()} icon={<Activity size={28} className="text-white"/>} iconBgColor="#9B51E0" className="bg-gradient-to-br from-[#1A0129] to-[#2C0054]" />
+                        </div>
+                        <h2 className="text-3xl font-bold mb-4">Mapa de Actividad en Vivo</h2>
+                        <Card className="h-[600px] overflow-hidden bg-transparent border-none p-0">
+                            <MapContainer center={[MOCK_USER_LOCATION.lat, MOCK_USER_LOCATION.lng]} zoom={13} scrollWheelZoom={false} className="h-full w-full">
+                                <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'/>
+                                {liveOrders.map(order => (
+                                    <React.Fragment key={order.id}>
+                                        {order.business?.location && <Marker position={[order.business.location.lat, order.business.location.lng]}><Popup>{order.business.name} (Negocio)</Popup></Marker>}
+                                        {order.delivery_person?.location && <Marker position={[order.delivery_person.location.lat, order.delivery_person.location.lng]}><Popup>{order.delivery_person.name} (Repartidor)</Popup></Marker>}
+                                    </React.Fragment>
+                                ))}
+                            </MapContainer>
+                        </Card>
+                    </div>
+                );
             case 'users':
                 return renderUserManagement();
             case 'businesses':
                 return <PlaceholderContent title="Gestión de Negocios" />;
             case 'delivery':
                 return <PlaceholderContent title="Gestión de Repartidores" />;
-            case 'overview':
             default:
-                return (
-                    <>
-                        <header className="p-4 flex-shrink-0">
-                             <h2 className="text-3xl font-bold">Vista Global en Tiempo Real</h2>
-                        </header>
-                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 flex-shrink-0">
-                            <StatsCard title="Pedidos Activos" value={liveOrders.length.toString()} icon={<Activity className="text-white" />} iconBgColor="#2F80ED" className="bg-black/20" />
-                            <StatsCard title="Clientes en Línea" value="1,204" icon={<Users className="text-white" />} iconBgColor="#27AE60" className="bg-black/20" />
-                            <StatsCard title="Negocios Abiertos" value="23" icon={<Briefcase className="text-white" />} iconBgColor="#F2994A" className="bg-black/20" />
-                            <StatsCard title="Repartidores Activos" value="47" icon={<Bike className="text-white" />} iconBgColor="#9B51E0" className="bg-black/20" />
-                        </div>
-                        <div className="flex-grow p-4 min-h-0">
-                            <Card className="w-full h-full overflow-hidden bg-transparent p-0">
-                                <MapContainer center={[MOCK_USER_LOCATION.lat, MOCK_USER_LOCATION.lng]} zoom={12} scrollWheelZoom={true} className="w-full h-full">
-                                   <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>' />
-                                    {liveOrders.flatMap(order => [
-                                        order.business && (
-                                            <Marker key={`${order.id}-business`} position={[order.business.location.lat, order.business.location.lng]} icon={new L.Icon({iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', shadowSize: [41, 41]})}>
-                                                <Popup>
-                                                    <div className="text-sm">
-                                                        <p className="font-bold text-base">{order.business.name}</p>
-                                                        <p>Negocio</p>
-                                                    </div>
-                                                </Popup>
-                                            </Marker>
-                                        ),
-                                        order.delivery_person && (
-                                            <Marker key={`${order.id}-delivery`} position={[order.delivery_person.location.lat, order.delivery_person.location.lng]} icon={new L.Icon({iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', shadowSize: [41, 41]})}>
-                                                <Popup>
-                                                    <div className="text-sm text-gray-800">
-                                                        <p className="font-bold text-base">{order.delivery_person.name}</p>
-                                                        <p className="text-xs text-gray-600 mb-1">Repartidor</p>
-                                                        <hr className="my-1" />
-                                                        <p>
-                                                            <strong>Estado: </strong>
-                                                            <span className={`font-semibold ${order.delivery_person.is_online ? 'text-green-600' : 'text-gray-500'}`}>
-                                                                {order.status === OrderStatus.ON_THE_WAY ? 'En Entrega' : 'Asignado'}
-                                                            </span>
-                                                        </p>
-                                                    </div>
-                                                </Popup>
-                                            </Marker>
-                                        ),
-                                        <Marker key={`${order.id}-client`} position={[order.delivery_location.lat, order.delivery_location.lng]} icon={new L.Icon({iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png', shadowSize: [41, 41]})}>
-                                            <Popup>
-                                                <div className="text-sm text-gray-800" style={{ minWidth: '180px' }}>
-                                                    <p className="font-bold text-base mb-1">Pedido #{order.id.slice(-6)}</p>
-                                                    <p><strong>Cliente:</strong> #{order.client_id.slice(-4)}</p>
-                                                    <p><strong>Estado:</strong> <span className="font-semibold">{ORDER_STATUS_MAP[order.status].text}</span></p>
-                                                    <hr className="my-1" />
-                                                    <p><strong>Dirección:</strong> {order.delivery_address}</p>
-                                                    {order.special_notes && <p className="mt-1"><strong>Notas:</strong> <span className="italic">"{order.special_notes}"</span></p>}
-                                                </div>
-                                            </Popup>
-                                        </Marker>
-                                    ].filter(Boolean))}
-                                </MapContainer>
-                            </Card>
-                        </div>
-                    </>
-                );
+                return null;
         }
     }
-    
+
     return (
-        <div className="flex h-screen bg-[#081826] text-white">
-            <aside className="w-64 bg-[#0B2235] shadow-lg p-4 flex flex-col flex-shrink-0">
-                <h1 className="text-2xl font-bold text-blue-400 mb-8">{APP_NAME} Admin</h1>
-                <nav className="flex-grow">
-                    <ul>
-                       {navItems.map(item => (
-                            <li key={item.id} className="mb-2">
-                                <button
-                                    onClick={() => setCurrentView(item.id as AdminView)}
-                                    className={`w-full flex items-center p-3 rounded-lg text-left transition-colors duration-200 ${
-                                        currentView === item.id
-                                            ? 'bg-blue-500/20 text-blue-300 font-semibold'
-                                            : 'hover:bg-white/10'
-                                    }`}
-                                >
-                                    <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
-                                    <span>{item.label}</span>
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
+        <div className="min-h-screen bg-gray-100 flex">
+             <aside className="w-64 bg-[#1A0129] text-white flex flex-col">
+                <div className="p-6 border-b border-white/10">
+                    <h1 className="text-2xl font-bold">{APP_NAME}</h1>
+                    <span className="text-sm text-purple-300">Panel de Admin</span>
+                </div>
+                <nav className="flex-grow p-4">
+                    {navItems.map(item => {
+                        const Icon = item.icon;
+                        return (
+                            <button
+                                key={item.id}
+                                onClick={() => setCurrentView(item.id as AdminView)}
+                                className={`w-full flex items-center p-3 my-1 rounded-lg text-left transition-colors ${
+                                currentView === item.id ? 'bg-purple-800' : 'hover:bg-purple-900/50'
+                                }`}
+                            >
+                                <Icon className="w-5 h-5 mr-3" />
+                                {item.label}
+                            </button>
+                        );
+                    })}
                 </nav>
-                <div>
-                     <p className="text-sm text-gray-400">Hola, {user.name}</p>
-                     <Button onClick={onLogout} variant="secondary" className="w-full mt-2">Cerrar Sesión</Button>
+                <div className="p-4 border-t border-white/10">
+                    <p className="text-sm">Iniciaste sesión como</p>
+                    <p className="font-semibold truncate">{user.name}</p>
+                    <Button onClick={onLogout} variant="secondary" className="w-full mt-4">Cerrar Sesión</Button>
                 </div>
             </aside>
-            <main className="flex-1 flex flex-col overflow-y-auto">
+            <main className="flex-1 overflow-y-auto">
                 {renderContent()}
             </main>
+            <ConfirmationModal
+                isOpen={modalState.isOpen}
+                onClose={() => setModalState({ isOpen: false, user: null, action: null })}
+                onConfirm={handleConfirmAction}
+                title={`Confirmar ${modalState.action === 'activate' ? 'Activación' : 'Desactivación'}`}
+                message={`¿Estás seguro de que quieres ${modalState.action === 'activate' ? 'activar' : 'desactivar'} a ${modalState.user?.name}?`}
+                confirmText={`Sí, ${modalState.action === 'activate' ? 'Activar' : 'Desactivar'}`}
+            />
         </div>
     );
 };

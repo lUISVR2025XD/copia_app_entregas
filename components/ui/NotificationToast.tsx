@@ -24,6 +24,15 @@ const COLORS = {
     new_order: 'border-orange-500',
 };
 
+const ICON_COLORS = {
+    info: 'text-blue-500',
+    success: 'text-green-500',
+    warning: 'text-yellow-500',
+    error: 'text-red-500',
+    new_order: 'text-orange-500',
+};
+
+
 const NotificationToast: React.FC<NotificationToastProps> = ({ notification, onDismiss }) => {
     const [isExiting, setIsExiting] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
@@ -46,21 +55,28 @@ const NotificationToast: React.FC<NotificationToastProps> = ({ notification, onD
     
     const Icon = notification.icon || ICONS[notification.type];
     const colorClass = COLORS[notification.type];
-
+    const iconColorClass = ICON_COLORS[notification.type];
     const animationClass = isExiting ? 'animate-slide-out' : 'animate-slide-in';
+
+    // Define styles for the white background informational box
+    const cardStyles = 'bg-white dark:bg-white';
+    const titleStyles = 'text-black';
+    const messageStyles = 'text-gray-800';
+    const dismissButtonStyles = 'text-gray-700 hover:bg-gray-200';
+
 
     return (
         <Card
-            className={`flex items-start p-4 border-l-4 ${colorClass} ${animationClass}`}
+            className={`flex items-start p-4 border-l-4 ${colorClass} ${animationClass} ${cardStyles}`}
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
         >
-            {Icon && <Icon className={`h-6 w-6 mr-3 flex-shrink-0 ${notification.type === 'new_order' ? 'text-orange-500' : 'text-current'}`} />}
+            {Icon && <Icon className={`h-6 w-6 mr-3 flex-shrink-0 ${iconColorClass}`} />}
             <div className="flex-grow">
-                <h4 className="font-bold">{notification.title}</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-300">{notification.message}</p>
+                <h4 className={`font-bold ${titleStyles}`}>{notification.title}</h4>
+                <p className={`text-sm ${messageStyles}`}>{notification.message}</p>
             </div>
-            <button onClick={handleDismiss} className="ml-4 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+            <button onClick={handleDismiss} className={`ml-4 p-1 rounded-full ${dismissButtonStyles}`}>
                 <X className="h-5 w-5" />
             </button>
         </Card>
