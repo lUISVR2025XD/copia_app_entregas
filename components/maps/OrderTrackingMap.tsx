@@ -100,7 +100,8 @@ const OrderTrackingMap: React.FC<OrderTrackingMapProps> = ({
 
   return (
     <div className={`relative ${className}`}>
-      <MapContainer center={[center.lat, center.lng]} zoom={zoom} scrollWheelZoom={false} className="h-full w-full" ref={setMap}>
+      {/* FIX: Replaced `ref` with `whenCreated` to correctly get the map instance from react-leaflet without type errors. */}
+      <MapContainer center={[center.lat, center.lng]} zoom={zoom} scrollWheelZoom={false} className="h-full w-full" whenCreated={setMap}>
         <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

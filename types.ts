@@ -1,4 +1,6 @@
 
+import React from 'react';
+
 export enum UserRole {
   VISITOR = 'VISITOR',
   CLIENT = 'CLIENT',

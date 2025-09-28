@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Profile, Order, OrderStatus, UserRole, Notification } from '../types';
 import Button from '../components/ui/Button';
-import { Check, X, UtensilsCrossed, DollarSign, ClipboardList, TrendingUp, Clock, Package, Bike } from 'lucide-react';
+import { Check, X, UtensilsCrossed, DollarSign, ClipboardList, TrendingUp, Clock, Package, Bike, PieChart } from 'lucide-react';
 import DashboardHeader from '../components/shared/DashboardHeader';
 import { notificationService } from '../services/notificationService';
 import { orderService } from '../services/orderService';
@@ -198,11 +198,58 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ user, onLogout })
     );
 
     const renderOverview = () => (
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-            <StatsCard title="Ingresos Totales" value="0.00" subtitle="+12.5%" icon={<DollarSign size={28} className="text-white"/>} iconBgColor="#00A88B" className="bg-gradient-to-br from-[#014D4A] to-[#013735]" />
-            <StatsCard title="Pedidos Hoy" value="0" subtitle="+8.2%" icon={<ClipboardList size={28} className="text-white"/>} iconBgColor="#3F7FBF" className="bg-gradient-to-br from-[#014D4A] to-[#013735]" />
-            <StatsCard title="Pedidos Pendientes" value={newOrders.length.toString()} subtitle="Ahora mismo" icon={<Clock size={28} className="text-white"/>} iconBgColor="#F2994A" className="bg-gradient-to-br from-[#014D4A] to-[#013735]" />
-            <StatsCard title="Pedidos Activos" value={activeOrders.length.toString()} subtitle={`${activeOrders.length} en proceso`} icon={<TrendingUp size={28} className="text-white"/>} iconBgColor="#9B51E0" className="bg-gradient-to-br from-[#014D4A] to-[#013735]" />
+        <div className="mt-4 space-y-8">
+            <div>
+                <h3 className="text-xl font-bold mb-4 text-teal-300">Métricas Clave (Últimos 7 días)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <StatsCard 
+                        title="Ingresos" 
+                        value="$1,250.50" 
+                        subtitle="+15% vs semana pasada" 
+                        icon={<DollarSign size={28} className="text-white"/>} 
+                        iconBgColor="#00A88B" 
+                        className="bg-gradient-to-br from-[#014D4A] to-[#013735]" 
+                    />
+                    <StatsCard 
+                        title="Pedidos Completados" 
+                        value="83" 
+                        subtitle="12 por día en promedio" 
+                        icon={<ClipboardList size={28} className="text-white"/>} 
+                        iconBgColor="#3F7FBF" 
+                        className="bg-gradient-to-br from-[#014D4A] to-[#013735]" 
+                    />
+                    <StatsCard 
+                        title="Valor Promedio Pedido" 
+                        value="$15.07" 
+                        subtitle="Por pedido completado" 
+                        icon={<PieChart size={28} className="text-white"/>}
+                        iconBgColor="#9B51E0" 
+                        className="bg-gradient-to-br from-[#014D4A] to-[#013735]" 
+                    />
+                </div>
+            </div>
+    
+            <div>
+                <h3 className="text-xl font-bold mb-4 text-teal-300">Actividad en Tiempo Real</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <StatsCard 
+                        title="Pedidos Pendientes" 
+                        value={newOrders.length.toString()} 
+                        subtitle="Esperando aceptación" 
+                        icon={<Clock size={28} className="text-white"/>} 
+                        iconBgColor="#F2994A" 
+                        className="bg-gradient-to-br from-[#014D4A] to-[#013735]" 
+                    />
+                    <StatsCard 
+                        title="Pedidos Activos" 
+                        value={activeOrders.length.toString()} 
+                        subtitle="En preparación o en camino" 
+                        icon={<TrendingUp size={28} className="text-white"/>} 
+                        iconBgColor="#EB5757"
+                        className="bg-gradient-to-br from-[#014D4A] to-[#013735]" 
+                    />
+                </div>
+            </div>
         </div>
     );
 
