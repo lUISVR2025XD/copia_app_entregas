@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Business, Location, Product } from '../types';
+import { Business, Location, Product, BusinessLoad } from '../types';
 import { MOCK_USER_LOCATION } from '../constants';
 import BusinessCard from '../components/client/BusinessCard';
 import ProductCard from '../components/client/ProductCard';
@@ -38,10 +38,10 @@ const fetchNearbyBusinesses = async (location: Location): Promise<Business[]> =>
   return new Promise(resolve => {
     setTimeout(() => {
       resolve([
-        { id: 'b1', name: 'Taquería El Pastor', category: 'Mexicana', rating: 4.8, delivery_time: '25-35 min', delivery_fee: 30, image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1771&auto=format&fit=crop', location: { lat: 19.4300, lng: -99.1300 }, is_open: true, phone: '5512345678', address: 'Calle Falsa 123', email: 'contacto@elpastor.com', opening_hours: 'L-D: 12:00 - 23:00' },
-        { id: 'b2', name: 'Sushi Express', category: 'Japonesa', rating: 4.6, delivery_time: '30-40 min', delivery_fee: 0, image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=1887&auto=format&fit=crop', location: { lat: 19.4350, lng: -99.1400 }, is_open: true, phone: '5587654321', address: 'Avenida Siempre Viva 742', email: 'hola@sushiexpress.com', opening_hours: 'M-S: 13:00 - 22:00' },
-        { id: 'b3', name: 'Pizza Bella', category: 'Italiana', rating: 4.9, delivery_time: '20-30 min', delivery_fee: 25, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=2070&auto=format&fit=crop', location: { lat: 19.4290, lng: -99.1350 }, is_open: false, phone: '5555555555', address: 'Plaza Central 1', email: 'info@pizzabella.com', opening_hours: 'L-V: 11:00 - 21:00' },
-        { id: 'b4', name: 'Burger Joint', category: 'Americana', rating: 4.5, delivery_time: '35-45 min', delivery_fee: 40, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1899&auto=format&fit=crop', location: { lat: 19.4380, lng: -99.1310 }, is_open: true, phone: '5511223344', address: 'Boulevard del Sabor 55', email: 'burgers@joint.com', opening_hours: 'L-D: 10:00 - 22:30' },
+        { id: 'b1', name: 'Taquería El Pastor', category: 'Mexicana', rating: 4.8, delivery_time: '25-35 min', delivery_fee: 30, image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1771&auto=format&fit=crop', location: { lat: 19.4300, lng: -99.1300 }, is_open: true, phone: '5512345678', address: 'Calle Falsa 123', email: 'contacto@elpastor.com', opening_hours: 'L-D: 12:00 - 23:00', current_load: BusinessLoad.NORMAL },
+        { id: 'b2', name: 'Sushi Express', category: 'Japonesa', rating: 4.6, delivery_time: '30-40 min', delivery_fee: 0, image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=1887&auto=format&fit=crop', location: { lat: 19.4350, lng: -99.1400 }, is_open: true, phone: '5587654321', address: 'Avenida Siempre Viva 742', email: 'hola@sushiexpress.com', opening_hours: 'M-S: 13:00 - 22:00', current_load: BusinessLoad.BUSY },
+        { id: 'b3', name: 'Pizza Bella', category: 'Italiana', rating: 4.9, delivery_time: '20-30 min', delivery_fee: 25, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=2070&auto=format&fit=crop', location: { lat: 19.4290, lng: -99.1350 }, is_open: false, phone: '5555555555', address: 'Plaza Central 1', email: 'info@pizzabella.com', opening_hours: 'L-V: 11:00 - 21:00', current_load: BusinessLoad.NORMAL },
+        { id: 'b4', name: 'Burger Joint', category: 'Americana', rating: 4.5, delivery_time: '35-45 min', delivery_fee: 40, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1899&auto=format&fit=crop', location: { lat: 19.4380, lng: -99.1310 }, is_open: true, phone: '5511223344', address: 'Boulevard del Sabor 55', email: 'burgers@joint.com', opening_hours: 'L-D: 10:00 - 22:30', current_load: BusinessLoad.VERY_BUSY },
       ]);
     }, 1000);
   });

@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Business } from '../../types';
+import { Business, BusinessLoad } from '../../types';
 import Card from '../ui/Card';
 import { Star, Clock } from 'lucide-react';
 
@@ -8,7 +9,35 @@ interface BusinessCardProps {
   onClick?: () => void;
 }
 
+const getAdjustedDeliveryTime = (deliveryTime: string, load?: BusinessLoad): { text: string; isBusy: boolean } => {
+    const timeParts = deliveryTime.match(/\d+/g);
+    if (!timeParts || timeParts.length < 2) return { text: deliveryTime, isBusy: false };
+
+    let minTime = parseInt(timeParts[0], 10);
+    let maxTime = parseInt(timeParts[1], 10);
+    let isBusy = false;
+
+    switch (load) {
+        case BusinessLoad.BUSY:
+            minTime += 10;
+            maxTime += 15;
+            isBusy = true;
+            break;
+        case BusinessLoad.VERY_BUSY:
+            minTime += 20;
+            maxTime += 25;
+            isBusy = true;
+            break;
+        default:
+             break;
+    }
+    return { text: `${minTime}-${maxTime} min`, isBusy };
+};
+
+
 const BusinessCard: React.FC<BusinessCardProps> = ({ business, onClick }) => {
+  const { text: adjustedTime, isBusy } = getAdjustedDeliveryTime(business.delivery_time, business.current_load);
+
   return (
     <Card 
       onClick={onClick}
@@ -30,9 +59,10 @@ const BusinessCard: React.FC<BusinessCardProps> = ({ business, onClick }) => {
         <h3 className="text-xl font-bold truncate">{business.name}</h3>
         <p className="text-gray-400 text-sm">{business.category}</p>
         <div className="flex justify-between items-center mt-2 text-sm text-gray-300">
-          <div className="flex items-center">
+          <div className={`flex items-center transition-colors ${isBusy ? 'text-orange-400 font-semibold' : ''}`}>
             <Clock className="w-4 h-4 mr-1" />
-            <span>{business.delivery_time}</span>
+            <span>{adjustedTime}</span>
+            {isBusy && <span className="text-xs ml-1 whitespace-nowrap">(+ alta demanda)</span>}
           </div>
           <div className="font-semibold">
             Envío ${business.delivery_fee > 0 ? business.delivery_fee.toFixed(2) : 'Gratis'}

@@ -54,7 +54,8 @@ const OrderTrackingMap: React.FC<OrderTrackingMapProps> = ({
   zoom = 13,
   className = 'h-96',
   quickMessages = [],
-  onSendQuickMessage = () => {},
+  // FIX: Updated default value to accept an argument to match the prop type.
+  onSendQuickMessage = () => undefined,
   isSendingAllowed = false,
 }) => {
     const [map, setMap] = useState<L.Map | null>(null);

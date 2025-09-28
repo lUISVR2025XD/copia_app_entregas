@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Profile, Order, OrderStatus, UserRole, Notification } from '../types';
+import { Profile, Order, OrderStatus, UserRole, Notification, BusinessLoad } from '../types';
 import Button from '../components/ui/Button';
 import { Check, X, UtensilsCrossed, DollarSign, ClipboardList, TrendingUp, Clock, Package, Bike, PieChart } from 'lucide-react';
 import DashboardHeader from '../components/shared/DashboardHeader';
@@ -22,6 +23,8 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ user, onLogout })
     const [isPrepTimeModalOpen, setIsPrepTimeModalOpen] = useState(false);
     const [orderToAccept, setOrderToAccept] = useState<Order | null>(null);
     const [prepTime, setPrepTime] = useState(15);
+    const [currentLoad, setCurrentLoad] = useState<BusinessLoad>(BusinessLoad.NORMAL);
+
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -68,6 +71,16 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ user, onLogout })
     }, [user.role]);
 
     const handleOpenPrepTimeModal = (order: Order) => {
+        let suggestedTime = 15;
+        switch (currentLoad) {
+            case BusinessLoad.BUSY:
+                suggestedTime = 25;
+                break;
+            case BusinessLoad.VERY_BUSY:
+                suggestedTime = 35;
+                break;
+        }
+        setPrepTime(suggestedTime);
         setOrderToAccept(order);
         setIsPrepTimeModalOpen(true);
     };
@@ -257,6 +270,16 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ user, onLogout })
         <div className="min-h-screen bg-gradient-to-b from-[#012D2D] to-[#001C1C] text-white">
             <DashboardHeader userName={user.name} onLogout={onLogout} title="vrtelolleva Business" />
             <main className="p-4 md:p-8">
+                 <div className="p-4 rounded-lg bg-gray-900/50 border border-teal-500/20 mb-6">
+                    <h3 className="text-xl font-bold mb-3 text-teal-300">Establecer Demanda Actual</h3>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <Button onClick={() => setCurrentLoad(BusinessLoad.NORMAL)} className={`w-full justify-center ${currentLoad === BusinessLoad.NORMAL ? '!bg-green-600 !border-green-500' : 'bg-transparent'}`}>Normal</Button>
+                        <Button onClick={() => setCurrentLoad(BusinessLoad.BUSY)} className={`w-full justify-center ${currentLoad === BusinessLoad.BUSY ? '!bg-yellow-500 !text-black !border-yellow-400' : 'bg-transparent'}`}>Ocupado</Button>
+                        <Button onClick={() => setCurrentLoad(BusinessLoad.VERY_BUSY)} className={`w-full justify-center ${currentLoad === BusinessLoad.VERY_BUSY ? '!bg-red-600 !border-red-500' : 'bg-transparent'}`}>Muy Ocupado</Button>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">Esto ajustará los tiempos de entrega estimados para los clientes y el tiempo de preparación sugerido.</p>
+                </div>
+
                  <div className="flex border-b border-white/10 mb-6">
                     <button onClick={() => setView('orders')} className={`px-4 py-3 font-semibold transition-colors ${view === 'orders' ? 'text-white border-b-2 border-teal-400' : 'text-gray-400 hover:text-white'}`}>
                         Pedidos ({newOrders.length + activeOrders.length})

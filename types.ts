@@ -20,6 +20,12 @@ export enum OrderStatus {
   CANCELLED = 'CANCELLED'
 }
 
+export enum BusinessLoad {
+  NORMAL = 'NORMAL',
+  BUSY = 'BUSY',
+  VERY_BUSY = 'VERY_BUSY'
+}
+
 export interface Location {
   lat: number;
   lng: number;
@@ -61,6 +67,7 @@ export interface Business {
   email: string;
   opening_hours: string;
   products?: Product[];
+  current_load?: BusinessLoad;
 }
 
 export interface DeliveryPerson {

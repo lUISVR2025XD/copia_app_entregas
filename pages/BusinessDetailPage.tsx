@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Business, Product } from '../types';
+import { Business, Product, BusinessLoad } from '../types';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import ProductCard from '../components/client/ProductCard';
@@ -13,6 +13,31 @@ interface BusinessDetailPageProps {
   onGoBack: () => void;
 }
 
+const getAdjustedDeliveryTime = (deliveryTime: string, load?: BusinessLoad): { text: string; isBusy: boolean } => {
+    const timeParts = deliveryTime.match(/\d+/g);
+    if (!timeParts || timeParts.length < 2) return { text: deliveryTime, isBusy: false };
+
+    let minTime = parseInt(timeParts[0], 10);
+    let maxTime = parseInt(timeParts[1], 10);
+    let isBusy = false;
+
+    switch (load) {
+        case BusinessLoad.BUSY:
+            minTime += 10;
+            maxTime += 15;
+            isBusy = true;
+            break;
+        case BusinessLoad.VERY_BUSY:
+            minTime += 20;
+            maxTime += 25;
+            isBusy = true;
+            break;
+        default:
+            break;
+    }
+    return { text: `${minTime}-${maxTime} min`, isBusy };
+};
+
 const MOCK_REVIEWS = [
     { id: 1, author: 'Juan P.', rating: 5, comment: '¡La comida es excelente y llegó súper rápido! Totalmente recomendado.' },
     { id: 2, author: 'Maria G.', rating: 4, comment: 'Muy buen sabor, aunque la porción podría ser un poco más grande.' },
@@ -20,6 +45,7 @@ const MOCK_REVIEWS = [
 ];
 
 const BusinessDetailPage: React.FC<BusinessDetailPageProps> = ({ business, onAddToCart, onGoBack }) => {
+  const { text: adjustedTime, isBusy } = getAdjustedDeliveryTime(business.delivery_time, business.current_load);
   return (
     <div className="animate-fade-in bg-[#1A0129] min-h-full">
         <div className="container mx-auto p-4 md:p-8">
@@ -40,7 +66,11 @@ const BusinessDetailPage: React.FC<BusinessDetailPageProps> = ({ business, onAdd
                 </div>
                 <div className="p-4 bg-white/5 flex flex-wrap items-center justify-around text-sm rounded-b-lg">
                     <div className="flex items-center m-2"><Star className="w-5 h-5 text-yellow-400 fill-yellow-400 mr-2" /> <span className="font-bold">{business.rating}</span> <span className="text-gray-400 ml-1"> (100+)</span></div>
-                    <div className="flex items-center m-2"><ClockIcon className="w-5 h-5 text-gray-300 mr-2" /> <span>{business.delivery_time}</span></div>
+                    <div className={`flex items-center m-2 transition-colors ${isBusy ? 'text-orange-400 font-semibold' : ''}`}>
+                        <ClockIcon className="w-5 h-5 text-gray-300 mr-2" />
+                        <span>{adjustedTime}</span>
+                        {isBusy && <span className="text-xs ml-1 whitespace-nowrap">(+ alta demanda)</span>}
+                    </div>
                     <div className="flex items-center m-2 font-semibold"><span>Envío: ${business.delivery_fee.toFixed(2)}</span></div>
                      {!business.is_open && <div className="m-2 px-3 py-1 bg-red-600 text-white rounded-full font-bold text-xs">CERRADO</div>}
                 </div>
