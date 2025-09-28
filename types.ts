@@ -48,6 +48,7 @@ export interface Business {
   name: string;
   category: string;
   rating: number;
+  rating_count?: number;
   delivery_time: string;
   delivery_fee: number;
   image: string;
@@ -56,6 +57,7 @@ export interface Business {
   phone: string;
   address: string;
   email: string;
+  opening_hours: string;
   products?: Product[];
 }
 
@@ -66,6 +68,7 @@ export interface DeliveryPerson {
   email: string;
   vehicle: string;
   rating: number;
+  rating_count?: number;
   is_online: boolean;
   location: Location;
   current_deliveries: number;
@@ -91,6 +94,8 @@ export interface Order {
   delivery_location: Location;
   special_notes?: string;
   preparation_time?: number;
+  messages?: QuickMessage[];
+  is_rated?: boolean;
   created_at: string;
 }
 
@@ -131,4 +136,5 @@ export interface FilterState {
   minRating: number;
   maxDeliveryTime: number; // in minutes, 0 for no filter
   maxDeliveryFee: number; // in currency, 0 for no filter
+  openNow: boolean;
 }

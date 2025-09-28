@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -25,8 +26,8 @@ const MOCK_LIVE_ORDERS: Order[] = [
         delivery_address: 'Av. de la Reforma 222, Juárez, 06600, CDMX',
         special_notes: 'Tocar en la puerta de madera, por favor.',
         delivery_location: { lat: 19.4350, lng: -99.1350 },
-        business: { id: 'business-1', name: 'Taquería El Pastor', location: { lat: 19.4300, lng: -99.1300 }, category: 'Mexicana', delivery_fee: 30, delivery_time: '25-35 min', image: '', is_open: true, phone: '', address: '', email: '', rating: 4.8 },
-        delivery_person: { id: 'delivery-1', name: 'Pedro R.', location: { lat: 19.4325, lng: -99.1325 }, is_online: true, vehicle: '', current_deliveries: 0, email: '', phone: '', rating: 0 },
+        business: { id: 'business-1', name: 'Taquería El Pastor', location: { lat: 19.4300, lng: -99.1300 }, category: 'Mexicana', delivery_fee: 30, delivery_time: '25-35 min', image: '', is_open: true, phone: '', address: '', email: '', rating: 4.8, rating_count: 152, opening_hours: 'L-D: 12:00 - 23:00' },
+        delivery_person: { id: 'delivery-1', name: 'Pedro R.', location: { lat: 19.4325, lng: -99.1325 }, is_online: true, vehicle: '', current_deliveries: 0, email: '', phone: '', rating: 4.9, rating_count: 45 },
         created_at: new Date().toISOString(),
     },
     {
@@ -35,7 +36,7 @@ const MOCK_LIVE_ORDERS: Order[] = [
         delivery_address: 'Calle de Madero 1, Centro Histórico, 06000, CDMX',
         special_notes: 'Sin salsa picante.',
         delivery_location: { lat: 19.4250, lng: -99.1450 },
-        business: { id: 'business-2', name: 'Sushi Express', location: { lat: 19.4350, lng: -99.1400 }, category: 'Japonesa', delivery_fee: 0, delivery_time: '30-40 min', image: '', is_open: true, phone: '', address: '', email: '', rating: 4.6 },
+        business: { id: 'business-2', name: 'Sushi Express', location: { lat: 19.4350, lng: -99.1400 }, category: 'Japonesa', delivery_fee: 0, delivery_time: '30-40 min', image: '', is_open: true, phone: '', address: '', email: '', rating: 4.6, rating_count: 88, opening_hours: 'M-S: 13:00 - 22:00' },
         created_at: new Date().toISOString(),
     }
 ];
@@ -51,6 +52,25 @@ const PlaceholderContent: React.FC<{ title: string }> = ({ title }) => (
         </Card>
     </div>
 );
+
+// Custom icons for the map
+const iconBusiness = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    shadowSize: [41, 41]
+});
+
+const iconDelivery = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    shadowSize: [41, 41]
+});
 
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
@@ -240,13 +260,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                             <StatsCard title="Pedidos en Curso" value={liveOrders.length.toString()} icon={<Activity size={28} className="text-white"/>} iconBgColor="#9B51E0" className="bg-gradient-to-br from-[#1A0129] to-[#2C0054]" />
                         </div>
                         <h2 className="text-3xl font-bold mb-4">Mapa de Actividad en Vivo</h2>
-                        <Card className="h-[600px] overflow-hidden bg-transparent border-none p-0">
+                        <Card className="h-[600px] overflow-hidden bg-white border border-gray-200 shadow">
                             <MapContainer center={[MOCK_USER_LOCATION.lat, MOCK_USER_LOCATION.lng]} zoom={13} scrollWheelZoom={false} className="h-full w-full">
-                                <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'/>
+                                <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'/>
                                 {liveOrders.map(order => (
                                     <React.Fragment key={order.id}>
-                                        {order.business?.location && <Marker position={[order.business.location.lat, order.business.location.lng]}><Popup>{order.business.name} (Negocio)</Popup></Marker>}
-                                        {order.delivery_person?.location && <Marker position={[order.delivery_person.location.lat, order.delivery_person.location.lng]}><Popup>{order.delivery_person.name} (Repartidor)</Popup></Marker>}
+                                        {order.business?.location && <Marker position={[order.business.location.lat, order.business.location.lng]} icon={iconBusiness}><Popup>{order.business.name} (Negocio)</Popup></Marker>}
+                                        {order.delivery_person?.location && <Marker position={[order.delivery_person.location.lat, order.delivery_person.location.lng]} icon={iconDelivery}><Popup>{order.delivery_person.name} (Repartidor)</Popup></Marker>}
                                     </React.Fragment>
                                 ))}
                             </MapContainer>

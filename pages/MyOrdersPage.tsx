@@ -1,20 +1,28 @@
+
 import React, { useState, useMemo } from 'react';
-import { Order, OrderStatus } from '../types';
+import { Order, OrderStatus, UserRole, Business } from '../types';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { ORDER_STATUS_MAP } from '../constants';
-import { ChevronLeft, RefreshCw, Search, Eye, ShoppingBag } from 'lucide-react';
+import { ChevronLeft, RefreshCw, Search, Eye, ShoppingBag, Star, ThumbsUp } from 'lucide-react';
 import OrderDetailsModal from '../components/client/OrderDetailsModal';
+import RatingModal from '../components/client/RatingModal';
+import { orderService } from '../services/orderService';
+import { notificationService } from '../services/notificationService';
+
 
 interface MyOrdersPageProps {
     orders: Order[];
     onTrackOrder: (order: Order) => void;
     onBackToShopping: () => void;
+    onUpdateBusinessRating: (businessId: string, newRating: number) => void;
+    onUpdateOrder: (updatedOrder: Order) => void;
 }
 
-const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ orders, onTrackOrder, onBackToShopping }) => {
+const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ orders, onTrackOrder, onBackToShopping, onUpdateBusinessRating, onUpdateOrder }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [orderToRate, setOrderToRate] = useState<Order | null>(null);
 
     const filteredOrders = useMemo(() => {
         if (!searchQuery) {
@@ -36,6 +44,38 @@ const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ orders, onTrackOrder, onBac
             OrderStatus.ON_THE_WAY
         ].includes(status);
     };
+
+    const handleRateOrderClick = (order: Order) => {
+        setOrderToRate(order);
+    };
+
+    const handleSubmitRating = async (ratings: { business: number; delivery: number }) => {
+        if (!orderToRate) return;
+
+        // Simulate updating business rating
+        onUpdateBusinessRating(orderToRate.business_id, ratings.business);
+        
+        // NOTE: Delivery person rating update is not implemented as there's no central store for them in the client view.
+        
+        // Mark order as rated in the backend
+        const updatedOrder = await orderService.updateOrder(orderToRate.id, { is_rated: true });
+        
+        if(updatedOrder) {
+            onUpdateOrder(updatedOrder);
+        }
+
+        notificationService.sendNotification({
+            id: `rate-success-${Date.now()}`,
+            role: UserRole.CLIENT,
+            title: '¡Gracias por tu opinión!',
+            message: 'Tu calificación ha sido registrada.',
+            type: 'success',
+            icon: ThumbsUp,
+        });
+
+        setOrderToRate(null); // Close modal
+    };
+
 
     return (
         <div className="container mx-auto p-4 md:p-8 animate-fade-in">
@@ -88,6 +128,11 @@ const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ orders, onTrackOrder, onBac
                                             <Button onClick={() => onTrackOrder(order)} className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700">
                                                 Seguir Pedido
                                             </Button>
+                                        ) : order.status === OrderStatus.DELIVERED && !order.is_rated ? (
+                                             <Button onClick={() => handleRateOrderClick(order)} className="w-full sm:w-auto !bg-yellow-500 hover:!bg-yellow-600 !text-black flex items-center justify-center">
+                                                <Star className="w-4 h-4 mr-2" />
+                                                Calificar Pedido
+                                            </Button>
                                         ) : (
                                             <Button variant="secondary" className="w-full sm:w-auto flex items-center justify-center" onClick={() => setSelectedOrder(order)}>
                                                 <Eye className="w-4 h-4 mr-2" />
@@ -117,6 +162,12 @@ const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ orders, onTrackOrder, onBac
                 isOpen={!!selectedOrder}
                 order={selectedOrder}
                 onClose={() => setSelectedOrder(null)}
+            />
+            <RatingModal
+                isOpen={!!orderToRate}
+                order={orderToRate}
+                onClose={() => setOrderToRate(null)}
+                onSubmit={handleSubmitRating}
             />
         </div>
     );

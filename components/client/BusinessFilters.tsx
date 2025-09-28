@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Business, FilterState } from '../../types';
 import Card from '../ui/Card';
@@ -30,7 +31,7 @@ const BusinessFilters: React.FC<BusinessFiltersProps> = ({ businesses, filters, 
       onFilterChange({ minRating: filters.minRating === rating ? 0 : rating });
   }
 
-  const hasActiveFilters = filters.categories.length > 0 || filters.minRating > 0 || filters.maxDeliveryTime > 0 || filters.maxDeliveryFee > 0;
+  const hasActiveFilters = filters.categories.length > 0 || filters.minRating > 0 || filters.maxDeliveryTime > 0 || filters.maxDeliveryFee > 0 || filters.openNow;
 
   return (
     <Card className="p-4 mb-8 bg-white/10 border border-white/20">
@@ -44,6 +45,22 @@ const BusinessFilters: React.FC<BusinessFiltersProps> = ({ businesses, filters, 
             <div className="flex items-center gap-2">
                 <span className="font-semibold text-sm">Calificación:</span>
                 <StarRating rating={filters.minRating} setRating={handleRatingChange} />
+            </div>
+
+            <div className="flex items-center gap-2">
+                <span className="font-semibold text-sm">Abierto Ahora:</span>
+                <button
+                    onClick={() => onFilterChange({ openNow: !filters.openNow })}
+                    className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${
+                        filters.openNow ? 'bg-purple-600' : 'bg-gray-600'
+                    }`}
+                >
+                    <span
+                        className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${
+                            filters.openNow ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                    />
+                </button>
             </div>
 
             {hasActiveFilters && (

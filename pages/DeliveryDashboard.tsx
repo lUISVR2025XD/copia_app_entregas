@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
-import { Profile, Order, OrderStatus, DeliveryPerson, UserRole, Notification } from '../types';
+import { Profile, Order, OrderStatus, DeliveryPerson, UserRole, Notification, QuickMessage } from '../types';
 import { ORDER_STATUS_MAP, QUICK_MESSAGES_DELIVERY } from '../constants';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import OrderTrackingMap from '../components/maps/OrderTrackingMap';
-import { MessageSquare, Bike, DollarSign, Clock, BarChart, Power, Menu, PackageCheck } from 'lucide-react';
+import { MessageSquare, Bike, DollarSign, Clock, BarChart, Power, Menu, PackageCheck, Check } from 'lucide-react';
 import { notificationService } from '../services/notificationService';
 import StatsCard from '../components/ui/StatsCard';
 import { orderService } from '../services/orderService';
@@ -24,9 +25,9 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
 
     const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
     const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
-    const [clientMessages, setClientMessages] = useState<Notification[]>([]);
+    const [sentMessage, setSentMessage] = useState<string | null>(null);
     const [deliveryPerson, setDeliveryPerson] = useState<DeliveryPerson>({
-         id: user.id, name: user.name, is_online: isOnline, location: { lat: 19.4280, lng: -99.1380 }, vehicle: 'Moto', rating: 4.9, current_deliveries: 0, email: user.email, phone: user.phone || ''
+         id: user.id, name: user.name, is_online: isOnline, location: { lat: 19.4280, lng: -99.1380 }, vehicle: 'Moto', rating: 4.9, rating_count: 45, current_deliveries: 0, email: user.email, phone: user.phone || ''
     });
      
     useEffect(() => {
@@ -42,7 +43,6 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
             if (myCurrentOrder) {
                 setCurrentOrder(myCurrentOrder);
                 setAvailableOrders([]);
-                setClientMessages([]);
             } else if (isOnline) {
                 // If no active order and online, fetch available orders
                 const readyOrders = await orderService.getOrders({ status: OrderStatus.READY_FOR_PICKUP });
@@ -57,17 +57,18 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
         const handleNotification = (notification: Notification) => {
           if (notification.role !== UserRole.DELIVERY) return;
 
+          // Handle message from client (which comes with updated order)
+          if (notification.order && currentOrder && notification.orderId === currentOrder.id && notification.title === 'Mensaje del Cliente') {
+              setCurrentOrder(notification.order);
+              return;
+          }
+
           // A new order is ready for pickup, and I'm online and free
           if (isOnline && !currentOrder && notification.order && notification.title === 'Pedido Listo para Recoger') {
             setAvailableOrders(prev => {
                 if (prev.find(o => o.id === notification.order!.id)) return prev;
                 return [notification.order, ...prev];
             });
-          }
-          
-          // A message from the client for the current order
-          if (currentOrder && notification.orderId === currentOrder.id && notification.title === 'Mensaje del Cliente') {
-              setClientMessages(prev => [...prev, notification]);
           }
         };
     
@@ -94,7 +95,6 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
         if (updatedOrder) {
             setCurrentOrder(updatedOrder);
             setAvailableOrders([]);
-            setClientMessages([]);
             
             notificationService.sendNotification({
                 id: `note-onway-${Date.now()}`,
@@ -148,7 +148,6 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
                 });
 
                 setCurrentOrder(null);
-                setClientMessages([]);
                 // After finishing an order, check for new ones if online.
                 if(isOnline) {
                     const readyOrders = await orderService.getOrders({ status: OrderStatus.READY_FOR_PICKUP });
@@ -160,17 +159,50 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
         }
     }
     
-    const sendQuickMessage = (message: string) => {
-        if (!currentOrder) return;
-        notificationService.sendNotification({
-            id: `note-msg-delivery-${Date.now()}`,
-            role: UserRole.CLIENT,
-            orderId: currentOrder.id,
-            title: 'Mensaje del Repartidor',
-            message: `${user.name}: "${message}"`,
-            type: 'info',
-            icon: MessageSquare
-        });
+    const sendQuickMessage = async (message: string) => {
+        if (!currentOrder || sentMessage) return;
+    
+        const quickMessage: QuickMessage = {
+            id: `msg-${Date.now()}`,
+            order_id: currentOrder.id,
+            sender_id: user.id,
+            recipient_id: currentOrder.client_id,
+            message: message,
+            created_at: new Date().toISOString(),
+            is_read: false,
+        };
+    
+        const updatedOrder = await orderService.addMessageToOrder(currentOrder.id, quickMessage);
+        
+        if (updatedOrder) {
+            setCurrentOrder(updatedOrder);
+    
+            notificationService.sendNotification({
+                id: `note-msg-delivery-${Date.now()}`,
+                role: UserRole.CLIENT,
+                orderId: currentOrder.id,
+                order: updatedOrder,
+                title: 'Mensaje del Repartidor',
+                message: `${user.name}: "${message}"`,
+                type: 'info',
+                icon: MessageSquare
+            });
+    
+            notificationService.sendNotification({
+                id: `note-msg-delivery-confirm-${Date.now()}`,
+                role: UserRole.DELIVERY,
+                orderId: currentOrder.id,
+                title: 'Mensaje Enviado',
+                message: `Tu mensaje fue enviado al cliente.`,
+                type: 'success',
+                icon: Check
+            });
+            
+            setSentMessage(message);
+            setTimeout(() => {
+                setSentMessage(null);
+            }, 3000);
+        }
     }
 
     const renderCurrentOrder = () => {
@@ -197,13 +229,15 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
                         
                         <div className="my-3 border-t border-white/20"></div>
 
-                        {clientMessages.length > 0 && (
+                        {currentOrder.messages && currentOrder.messages.length > 0 && (
                             <div className="mb-4">
-                                <h5 className="font-semibold mb-2 flex items-center"><MessageSquare className="inline-block mr-2 h-5 w-5 text-purple-400"/> Mensajes del Cliente</h5>
+                                <h5 className="font-semibold mb-2 flex items-center"><MessageSquare className="inline-block mr-2 h-5 w-5 text-purple-400"/> Mensajes</h5>
                                 <div className="space-y-2 bg-black/20 p-3 rounded-lg max-h-24 overflow-y-auto">
-                                    {clientMessages.map(notif => (
-                                        <p key={notif.id} className="text-sm text-gray-300">
-                                            <span className="font-semibold text-purple-300">Cliente:</span> {notif.message.split(': "')[1]?.slice(0, -1) || notif.message}
+                                    {currentOrder.messages.map(msg => (
+                                        <p key={msg.id} className="text-sm text-gray-300">
+                                            <span className={`font-semibold ${msg.sender_id === user.id ? 'text-green-300' : 'text-purple-300'}`}>
+                                                {msg.sender_id === user.id ? 'Tú' : 'Cliente'}:
+                                            </span> {msg.message}
                                         </p>
                                     ))}
                                 </div>
@@ -212,12 +246,34 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
 
                          <div className="mb-4">
                              <h5 className="font-semibold mb-2">Mensajes Rápidos al Cliente</h5>
-                             <div className="grid grid-cols-2 gap-2">
-                                 {QUICK_MESSAGES_DELIVERY.map(msg => (
-                                     <Button key={msg} variant="secondary" onClick={() => sendQuickMessage(msg)} className="text-sm">
-                                         <MessageSquare className="inline-block mr-1 h-4 w-4"/> {msg}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                 {QUICK_MESSAGES_DELIVERY.map(msg => {
+                                    const isSent = sentMessage === msg;
+                                     return (
+                                     <Button 
+                                         key={msg} 
+                                         variant="secondary" 
+                                         onClick={() => sendQuickMessage(msg)} 
+                                         className={`text-sm w-full text-left p-3 h-auto justify-start transition-colors ${
+                                             isSent
+                                             ? '!bg-green-500 !text-white'
+                                             : ''
+                                         }`}
+                                         disabled={sentMessage !== null}
+                                     >
+                                         {isSent ? (
+                                             <div className="flex items-center">
+                                                 <Check className="w-5 h-5 mr-2" />
+                                                 Enviado
+                                             </div>
+                                         ) : (
+                                             <>
+                                                 <MessageSquare className="inline-block mr-2 h-4 w-4"/> {msg}
+                                             </>
+                                         )}
                                      </Button>
-                                 ))}
+                                     )
+                                 })}
                              </div>
                          </div>
 

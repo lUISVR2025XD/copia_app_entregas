@@ -37,10 +37,9 @@ export const QUICK_MESSAGES_DELIVERY = [
 ];
 
 export const QUICK_MESSAGES_CLIENT = [
-    "Estoy en la puerta, te espero.",
-    "Llama a mi teléfono al llegar, por favor.",
-    "El timbre no funciona, por favor toca fuerte.",
-    "Puedes dejarlo en la recepción con el guardia.",
+    "Espero en la puerta",
+    "Llamar al llegar",
+    "Entregar en recepción",
 ];
 
 export const MOCK_USER_LOCATION = { lat: 19.4326, lng: -99.1332 }; // Mexico City Zocalo

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Business, Product } from '../types';
 import Card from '../components/ui/Card';
@@ -68,7 +69,7 @@ const BusinessDetailPage: React.FC<BusinessDetailPageProps> = ({ business, onAdd
                          <ul className="space-y-3 text-gray-300">
                              <li className="flex items-start"><MapPin className="w-5 h-5 mr-3 mt-1 flex-shrink-0 text-purple-400"/> <span>{business.address}</span></li>
                              <li className="flex items-center"><Phone className="w-5 h-5 mr-3 flex-shrink-0 text-purple-400"/> <span>{business.phone}</span></li>
-                             <li className="flex items-start"><ClockIcon className="w-5 h-5 mr-3 mt-1 flex-shrink-0 text-purple-400"/> <span>L-S: 11:00-22:00<br/>D: 12:00-20:00</span></li>
+                             <li className="flex items-start"><ClockIcon className="w-5 h-5 mr-3 mt-1 flex-shrink-0 text-purple-400"/> <span>{business.opening_hours}</span></li>
                          </ul>
                     </Card>
 

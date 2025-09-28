@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Profile, Order, OrderStatus, CartItem, Business, Location, Product, UserRole, Notification } from '../types';
+import { Profile, Order, OrderStatus, CartItem, Business, Location, Product, UserRole, Notification, QuickMessage } from '../types';
 import OrderTrackingMap from '../components/maps/OrderTrackingMap';
 import { APP_NAME, ORDER_STATUS_MAP, MOCK_USER_LOCATION, QUICK_MESSAGES_CLIENT } from '../constants';
 import Button from '../components/ui/Button';
@@ -22,10 +23,10 @@ const fetchNearbyBusinesses = async (location: Location): Promise<Business[]> =>
     return new Promise(resolve => {
       setTimeout(() => {
         resolve([
-          { id: 'b1', name: 'Taquería El Pastor', category: 'Mexicana', rating: 4.8, delivery_time: '25-35 min', delivery_fee: 30, image: 'https://picsum.photos/seed/tacos/400/300', location: { lat: 19.4300, lng: -99.1300 }, is_open: true, phone: '55-1234-5678', address: 'Calle Falsa 123, Colonia Centro, CDMX', email: 'contacto@elpastor.com', products: MOCK_POPULAR_PRODUCTS.filter(p=>p.business_id === 'b1') },
-          { id: 'b2', name: 'Sushi Express', category: 'Japonesa', rating: 4.6, delivery_time: '30-40 min', delivery_fee: 0, image: 'https://picsum.photos/seed/sushi/400/300', location: { lat: 19.4350, lng: -99.1400 }, is_open: true, phone: '55-8765-4321', address: 'Avenida Siempre Viva 742, Roma Norte, CDMX', email: 'hola@sushiexpress.com', products: MOCK_POPULAR_PRODUCTS.filter(p=>p.business_id === 'b2') },
-          { id: 'b3', name: 'Pizza Bella', category: 'Italiana', rating: 4.9, delivery_time: '20-30 min', delivery_fee: 25, image: 'https://picsum.photos/seed/pizza/400/300', location: { lat: 19.4290, lng: -99.1350 }, is_open: false, phone: '55-5555-5555', address: 'Plaza Central 1, Condesa, CDMX', email: 'info@pizzabella.com', products: MOCK_POPULAR_PRODUCTS.filter(p=>p.business_id === 'b3') },
-          { id: 'b4', name: 'Burger Joint', category: 'Americana', rating: 4.5, delivery_time: '35-45 min', delivery_fee: 40, image: 'https://picsum.photos/seed/burger/400/300', location: { lat: 19.4380, lng: -99.1310 }, is_open: true, phone: '55-1122-3344', address: 'Boulevard del Sabor 55, Polanco, CDMX', email: 'burgers@joint.com', products: MOCK_POPULAR_PRODUCTS.filter(p=>p.business_id === 'b4') },
+          { id: 'b1', name: 'Taquería El Pastor', category: 'Mexicana', rating: 4.8, rating_count: 152, delivery_time: '25-35 min', delivery_fee: 30, image: 'https://picsum.photos/seed/tacos/400/300', location: { lat: 19.4300, lng: -99.1300 }, is_open: true, phone: '55-1234-5678', address: 'Calle Falsa 123, Colonia Centro, CDMX', email: 'contacto@elpastor.com', opening_hours: 'L-D: 12:00 - 23:00', products: MOCK_POPULAR_PRODUCTS.filter(p=>p.business_id === 'b1') },
+          { id: 'b2', name: 'Sushi Express', category: 'Japonesa', rating: 4.6, rating_count: 88, delivery_time: '30-40 min', delivery_fee: 0, image: 'https://picsum.photos/seed/sushi/400/300', location: { lat: 19.4350, lng: -99.1400 }, is_open: true, phone: '55-8765-4321', address: 'Avenida Siempre Viva 742, Roma Norte, CDMX', email: 'hola@sushiexpress.com', opening_hours: 'M-S: 13:00 - 22:00', products: MOCK_POPULAR_PRODUCTS.filter(p=>p.business_id === 'b2') },
+          { id: 'b3', name: 'Pizza Bella', category: 'Italiana', rating: 4.9, rating_count: 213, delivery_time: '20-30 min', delivery_fee: 25, image: 'https://picsum.photos/seed/pizza/400/300', location: { lat: 19.4290, lng: -99.1350 }, is_open: false, phone: '55-5555-5555', address: 'Plaza Central 1, Condesa, CDMX', email: 'info@pizzabella.com', opening_hours: 'L-V: 11:00 - 21:00', products: MOCK_POPULAR_PRODUCTS.filter(p=>p.business_id === 'b3') },
+          { id: 'b4', name: 'Burger Joint', category: 'Americana', rating: 4.5, rating_count: 340, delivery_time: '35-45 min', delivery_fee: 40, image: 'https://picsum.photos/seed/burger/400/300', location: { lat: 19.4380, lng: -99.1310 }, is_open: true, phone: '55-1122-3344', address: 'Boulevard del Sabor 55, Polanco, CDMX', email: 'burgers@joint.com', opening_hours: 'L-D: 10:00 - 22:30', products: MOCK_POPULAR_PRODUCTS.filter(p=>p.business_id === 'b4') },
         ]);
       }, 500);
     });
@@ -61,7 +62,6 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
     const [cart, setCart] = useState<CartItem[]>([]);
     const [cartBusiness, setCartBusiness] = useState<Business | null>(null);
     const [isCartVisible, setIsCartVisible] = useState(false);
-    const [driverMessages, setDriverMessages] = useState<Notification[]>([]);
     const [prepTimeRemaining, setPrepTimeRemaining] = useState<string | null>(null);
     
     // State for shopping view
@@ -97,7 +97,6 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
                 setActiveOrder(currentActiveOrder);
                 setDeliveryLocation(currentActiveOrder.delivery_person?.location || currentActiveOrder.business?.location);
                 setCurrentView('tracking');
-                setDriverMessages([]);
             }
 
             setLoading(false);
@@ -159,14 +158,8 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
             if (!notification.orderId || notification.role !== user.role) {
                 return;
             }
-    
-            // Handle incoming messages from the driver
-            if (activeOrder && notification.orderId === activeOrder.id && notification.title === 'Mensaje del Repartidor') {
-                setDriverMessages(prev => [...prev, notification]);
-                return;
-            }
-    
-            // Handle all other order status updates
+        
+            // Handle all order status updates by refreshing order state
             if (notification.order) {
                 const updatedOrder = notification.order;
     
@@ -193,7 +186,6 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
                     setActiveOrder(updatedOrder);
                     setDeliveryLocation(updatedOrder.delivery_person?.location || updatedOrder.business?.location);
                     setCurrentView('tracking');
-                    setDriverMessages([]);
                 }
             }
         };
@@ -233,11 +225,30 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
         return () => clearInterval(intervalId);
     }, [activeOrder]);
 
+    const handleUpdateOrder = (updatedOrder: Order) => {
+        setPastOrders(prevOrders => prevOrders.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+    };
 
-    const handleRateOrder = () => {
-        alert("¡Gracias por tu calificación!");
-        setActiveOrder(null);
-        setCurrentView('shopping');
+    const handleBusinessRatingUpdate = (businessId: string, newRating: number) => {
+        setBusinesses(prevBusinesses => {
+            return prevBusinesses.map(business => {
+                if (business.id === businessId) {
+                    const currentRating = business.rating || 0;
+                    const currentCount = business.rating_count || 0;
+                    
+                    const newTotalRating = (currentRating * currentCount) + newRating;
+                    const newCount = currentCount + 1;
+                    const newAverage = newTotalRating / newCount;
+
+                    return { 
+                        ...business, 
+                        rating: parseFloat(newAverage.toFixed(2)),
+                        rating_count: newCount 
+                    };
+                }
+                return business;
+            });
+        });
     };
 
     const handleAddToCart = (product: Product) => {
@@ -308,6 +319,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
             special_notes: details.notes,
             created_at: new Date().toISOString(),
             delivery_person: { id: 'delivery-1', name: 'Pedro R.', location: cartBusiness.location, is_online: true, vehicle: 'Moto', current_deliveries: 1, email: '', phone: '', rating: 4.9},
+            messages: [],
         };
         
         await orderService.createOrder(newOrder);
@@ -353,31 +365,48 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
         setActiveOrder(order);
         setDeliveryLocation(order.delivery_person?.location || order.business?.location);
         setCurrentView('tracking');
-        setDriverMessages([]);
     };
 
-    const handleSendQuickMessage = (message: string) => {
+    const handleSendQuickMessage = async (message: string) => {
         if (!activeOrder) return;
-
-        notificationService.sendNotification({
-            id: `note-msg-${Date.now()}`,
-            role: UserRole.DELIVERY,
-            orderId: activeOrder.id,
-            title: 'Mensaje del Cliente',
-            message: `Cliente para pedido #${activeOrder.id.slice(-6)}: "${message}"`,
-            type: 'info',
-            icon: MessageSquare
-        });
-        
-        notificationService.sendNotification({
-            id: `note-msg-conf-${Date.now()}`,
-            role: UserRole.CLIENT,
-            orderId: activeOrder.id,
-            title: 'Mensaje Enviado',
-            message: `Tu mensaje ha sido enviado al repartidor.`,
-            type: 'success',
-            icon: Check
-        });
+    
+        const quickMessage: QuickMessage = {
+            id: `msg-${Date.now()}`,
+            order_id: activeOrder.id,
+            sender_id: user.id,
+            recipient_id: activeOrder.delivery_person_id || '',
+            message: message,
+            created_at: new Date().toISOString(),
+            is_read: false,
+        };
+    
+        const updatedOrder = await orderService.addMessageToOrder(activeOrder.id, quickMessage);
+    
+        if (updatedOrder) {
+            setActiveOrder(updatedOrder);
+            setPastOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+    
+            notificationService.sendNotification({
+                id: `note-msg-${Date.now()}`,
+                role: UserRole.DELIVERY,
+                orderId: activeOrder.id,
+                order: updatedOrder,
+                title: 'Mensaje del Cliente',
+                message: `Cliente para pedido #${activeOrder.id.slice(-6)}: "${message}"`,
+                type: 'info',
+                icon: MessageSquare
+            });
+            
+            notificationService.sendNotification({
+                id: `note-msg-conf-${Date.now()}`,
+                role: UserRole.CLIENT,
+                orderId: activeOrder.id,
+                title: 'Mensaje Enviado',
+                message: `Tu mensaje ha sido enviado al repartidor.`,
+                type: 'success',
+                icon: Check
+            });
+        }
     };
 
     const renderOrderStatus = () => {
@@ -444,16 +473,18 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
                         </div>
                     )}
 
-                    {driverMessages.length > 0 && (
+                    {activeOrder.messages && activeOrder.messages.length > 0 && (
                         <div className="my-4">
                             <h4 className="font-semibold text-lg mb-2 flex items-center">
                                 <MessageSquare className="w-5 h-5 mr-2 text-purple-600" />
-                                Mensajes del Repartidor
+                                Mensajes
                             </h4>
-                            <div className="space-y-2 bg-gray-100 p-3 rounded-lg max-h-24 overflow-y-auto">
-                                {driverMessages.map(notif => (
-                                    <p key={notif.id} className="text-sm text-gray-800">
-                                        <span className="font-semibold text-purple-700">Repartidor:</span> {notif.message.split(': "')[1]?.slice(0, -1) || notif.message}
+                            <div className="space-y-2 bg-gray-100 p-3 rounded-lg max-h-32 overflow-y-auto">
+                                {activeOrder.messages.map(msg => (
+                                    <p key={msg.id} className="text-sm text-gray-800">
+                                        <span className={`font-semibold ${msg.sender_id === user.id ? 'text-green-700' : 'text-purple-700'}`}>
+                                            {msg.sender_id === user.id ? 'Tú' : 'Repartidor'}:
+                                        </span> {msg.message}
                                     </p>
                                 ))}
                             </div>
@@ -487,12 +518,8 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
                         <div className="mt-8 bg-white border border-gray-200 rounded-lg p-6 text-center shadow-md">
                             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
                             <h4 className="text-2xl font-bold text-gray-900">¡Tu pedido ha sido entregado!</h4>
-                            <p className="text-gray-600 mt-2 mb-6">Por favor, califica tu experiencia.</p>
-                            <div className="flex flex-col items-center space-y-4">
-                                <div><p className="font-semibold mb-1 text-gray-800">Calificar a {activeOrder.business?.name}</p><StarRating rating={0} setRating={() => {}} size={28}/></div>
-                                <div><p className="font-semibold mb-1 text-gray-800">Calificar a {activeOrder.delivery_person?.name}</p><StarRating rating={0} setRating={() => {}} size={28}/></div>
-                            </div>
-                            <Button onClick={handleRateOrder} className="mt-6 w-full md:w-auto !bg-purple-600 !text-white hover:!bg-purple-700">Enviar Calificación</Button>
+                            <p className="text-gray-600 mt-2 mb-6">Puedes calificar tu experiencia desde "Mis Pedidos".</p>
+                            <Button onClick={() => { setActiveOrder(null); setCurrentView('shopping'); }} className="mt-6 w-full md:w-auto !bg-purple-600 !text-white hover:!bg-purple-700">Volver a Restaurantes</Button>
                         </div>
                     )}
                     </>
@@ -528,7 +555,13 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
             case 'businessDetail':
                 return selectedBusiness && <BusinessDetailPage business={selectedBusiness} onAddToCart={handleAddToCart} onGoBack={handleGoBackToList} />;
             case 'history':
-                return <MyOrdersPage orders={pastOrders} onTrackOrder={handleTrackOrderFromHistory} onBackToShopping={() => setCurrentView('shopping')} />;
+                return <MyOrdersPage 
+                    orders={pastOrders} 
+                    onTrackOrder={handleTrackOrderFromHistory} 
+                    onBackToShopping={() => setCurrentView('shopping')}
+                    onUpdateBusinessRating={handleBusinessRatingUpdate}
+                    onUpdateOrder={handleUpdateOrder}
+                />;
             case 'shopping':
             default:
                  return (
@@ -570,7 +603,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
     const getTitle = () => {
         switch(currentView) {
             case 'tracking': return 'Seguimiento de Pedido';
-            case 'history': return 'Historial de Pedidos';
+            case 'history': return 'Mis Pedidos';
             case 'businessDetail': return selectedBusiness?.name || APP_NAME;
             case 'shopping':
             default: return APP_NAME;

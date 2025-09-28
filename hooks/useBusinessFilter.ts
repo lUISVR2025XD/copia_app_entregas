@@ -7,6 +7,7 @@ const initialFilters: FilterState = {
     minRating: 0,
     maxDeliveryTime: 0,
     maxDeliveryFee: 0,
+    openNow: false,
 };
 
 export const useBusinessFilter = (businesses: Business[]) => {
@@ -62,6 +63,11 @@ export const useBusinessFilter = (businesses: Business[]) => {
             } else {
                 filtered = filtered.filter(business => business.delivery_fee <= filters.maxDeliveryFee);
             }
+        }
+
+        // 6. Filter by Open Now
+        if (filters.openNow) {
+            filtered = filtered.filter(business => business.is_open);
         }
 
         setFilteredBusinesses(filtered);

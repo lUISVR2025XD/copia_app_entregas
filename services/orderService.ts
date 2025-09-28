@@ -1,5 +1,5 @@
 
-import { Order, OrderStatus } from '../types';
+import { Order, OrderStatus, QuickMessage } from '../types';
 
 const ORDER_DB_KEY = 'orderDB';
 const MOCK_ORDERS_INITIAL: Order[] = []; 
@@ -66,6 +66,25 @@ export const orderService = {
                 saveDB();
                 resolve(orderDB[orderIndex]);
             }, 200);
+        });
+    },
+
+    addMessageToOrder: (orderId: string, message: QuickMessage): Promise<Order | null> => {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                const orderIndex = orderDB.findIndex(o => o.id === orderId);
+                if (orderIndex === -1) {
+                    return reject(new Error('Order not found'));
+                }
+                const order = orderDB[orderIndex];
+                if (!order.messages) {
+                    order.messages = [];
+                }
+                order.messages.push(message);
+                orderDB[orderIndex] = order;
+                saveDB();
+                resolve(order);
+            }, 150);
         });
     },
 };
